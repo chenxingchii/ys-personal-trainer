@@ -15,6 +15,44 @@ tags: [YS专属训练师, 项目进度, Android, PWA, MVP]
 
 项目已完成可演示的移动端 Web MVP，当前进入 **Android 演示版验证阶段**。核心流程可以在 Android Chrome 中运行；PWA 基础已经加入，后续可部署到 HTTPS 地址并安装到手机主屏幕。当前暂不处理 iOS、微信小程序和在线大模型诊断。
 
+## 远程仓库与部署状态
+
+- GitHub 私有仓库：<https://github.com/chenxingchii/ys-personal-trainer>
+- 本地远程名：`origin`
+- 本地远程地址：`https://github.com/chenxingchii/ys-personal-trainer.git`
+- 当前状态：远程地址已配置，但本机终端到 GitHub `443` 连接失败，尚未完成首次推送。
+- 安全边界：仓库保持私有；训练视频、个人身份信息和 API 密钥不得提交。
+
+### 首次推送流程
+
+网络恢复后，在项目目录执行：
+
+```bash
+git remote -v
+git ls-remote origin
+git push -u origin main
+```
+
+若 GitHub 要求认证，使用 Git Credential Manager、Personal Access Token 或 GitHub Desktop 完成登录，不要把 Token 写入命令、文档或代码。推送前先确认：
+
+```bash
+git status --short
+git diff --check
+```
+
+### Vercel 固定 HTTPS 部署流程
+
+首次推送成功后，在 Vercel 中导入该私有 GitHub 仓库，使用以下配置：
+
+```text
+安装命令：pnpm install --frozen-lockfile
+构建命令：pnpm build
+输出目录：dist
+生产分支：main
+```
+
+Vercel 会生成固定的 `https://*.vercel.app` 生产地址；之后每次推送 `main` 都会自动重新部署。部署完成后，在 Android Chrome 打开生产地址并选择“添加到主屏幕”。首次 PWA 验收必须使用 HTTPS，不要用 `127.0.0.1` 或普通局域网 HTTP 地址替代。
+
 ## 已完成能力
 
 - 主界面：动作诊断、历史报告、训练计划、动作切换四个入口。

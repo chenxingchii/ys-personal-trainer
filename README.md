@@ -30,6 +30,18 @@ pnpm dev:lan
 
 当前 PWA 会缓存页面外壳、MediaPipe WASM 和模型等同源资源。首次打开或首次分析时仍需要等待资源下载；浏览器清理站点数据后需要重新下载。原始训练视频和历史报告仍只保存在当前设备，不会因为 PWA 安装自动上传。
 
+### 远程仓库与固定 HTTPS
+
+GitHub 私有仓库：<https://github.com/chenxingchii/ys-personal-trainer>
+
+本地仓库已经配置 `origin`。首次推送使用：
+
+```bash
+git push -u origin main
+```
+
+推送后在 Vercel 导入该私有仓库，构建命令使用 `pnpm build`，输出目录使用 `dist`。详细状态、认证注意事项和部署验收步骤见 [项目进度-Android演示版](./项目进度-Android演示版.md)。
+
 ### 后续优化路线
 
 1. Android 真机验收：相机权限、视频方向、常见格式、长视频内存和后台恢复。
