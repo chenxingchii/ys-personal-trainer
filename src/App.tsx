@@ -11,7 +11,7 @@ import {
   Square,
   Trash2,
 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import { useVideoSelection } from './capture/useVideoSelection'
 import { formatBytes, formatDuration } from './capture/video'
@@ -19,7 +19,8 @@ import { PoseOverlay } from './pose/PoseOverlay'
 import type { PoseEngineState } from './pose/types'
 import { usePoseLandmarker } from './pose/usePoseLandmarker'
 import { analyzeJump } from './biomechanics/jumpAnalysis'
-import type { JumpAnalysis } from './biomechanics/types'
+import { buildCoachReport, type CoachReport } from './reports/diagnosis'
+import { listLocalReports, saveLocalReport, type LocalReport } from './reports/localReports'
 
 type VideoInputProps = {
   capture?: 'environment'
@@ -112,37 +113,25 @@ function PoseStatus({ state }: { state: PoseEngineState }) {
   return <span>暂停到身体完整可见的一帧</span>
 }
 
-function AnalysisReport({ analysis }: { analysis: JumpAnalysis }) {
-  const friendlyLabels: Record<string, string> = {
-    'pre-squat-knee': '预蹲准备',
-    'takeoff-knee': '起跳蹬伸',
-    'backward-arm': '后摆蓄力',
-    'forward-arm': '前摆协同',
-    'arm-swing-range': '摆臂连贯性',
-    'landing-contact-knee': '落地姿态',
-    'landing-lowest-knee': '落地缓冲',
-    'landing-buffer': '落地缓冲',
-    'knee-asymmetry': '左右协同',
-  }
-  const priorityLabel = analysis.priority ? friendlyLabels[analysis.priority.id] : undefined
+function AnalysisReport({ report }: { report: CoachReport }) {
   return (
     <section className="analysis-report" aria-labelledby="analysis-report-title">
       <div className="report-heading">
         <div>
           <span className="report-kicker">02 · 训练建议</span>
-          <h2 id="analysis-report-title">这一次，先改哪一处？</h2>
+          <h2 id="analysis-report-title">{report.headline}</h2>
         </div>
       </div>
 
-      {analysis.priority ? (
+      {report.hasPriority ? (
         <div className="priority-report">
           <div className="priority-icon">
             <Activity aria-hidden="true" size={20} />
           </div>
           <div>
             <span>优先建议</span>
-            <strong>{priorityLabel}</strong>
-            <p>{analysis.priority.hint}</p>
+            <strong>{report.priority}</strong>
+            <p>{report.observation}</p>
           </div>
         </div>
       ) : (
@@ -152,13 +141,51 @@ function AnalysisReport({ analysis }: { analysis: JumpAnalysis }) {
           </div>
           <div>
             <span>本次结果</span>
-            <strong>暂未发现明确的优先问题</strong>
-            <p>保持当前动作节奏，再用下一次视频观察是否稳定。</p>
+            <strong>{report.priority}</strong>
+            <p>{report.observation}</p>
           </div>
         </div>
       )}
-      <p className="analysis-note">本次建议来自视频中的姿态变化，仅作为训练参考，不替代教练判断。</p>
+      <div className="report-sections">
+        <div className="report-section">
+          <span>教练观察</span>
+          <p>{report.observation}</p>
+        </div>
+        <div className="report-section">
+          <span>可能影响</span>
+          <p>{report.impact}</p>
+        </div>
+        <div className="report-section report-section--cue">
+          <span>下一次这样做</span>
+          <p>{report.coachingCue}</p>
+        </div>
+        <div className="report-section">
+          <span>建议练习</span>
+          <p>{report.drill}</p>
+        </div>
+      </div>
+      <p className="analysis-note">{report.confidenceNote}</p>
     </section>
+  )
+}
+
+function LocalHistory({ reports }: { reports: LocalReport[] }) {
+  if (!reports.length) return null
+  return (
+    <div className="local-history" aria-label="本机历史报告">
+      <div>
+        <strong>本机历史</strong>
+        <span>仅保存在这台设备</span>
+      </div>
+      <div className="history-items">
+        {reports.slice(0, 3).map((report) => (
+          <div className="history-item" key={report.id}>
+            <span>{new Date(report.createdAt).toLocaleDateString('zh-CN')}</span>
+            <strong>{report.coachReport.priority}</strong>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 
@@ -166,8 +193,13 @@ function App() {
   const { clearVideo, error, metadata, selectVideo, selectedVideo } = useVideoSelection()
   const { analyzeFrame, analyzeVideo, clearResult, reset: resetPose, state: poseState } = usePoseLandmarker()
   const videoRef = useRef<HTMLVideoElement>(null)
+  const [localReports, setLocalReports] = useState<LocalReport[]>(() => listLocalReports())
+  const savedReportVideoRef = useRef<string | null>(null)
 
   useEffect(() => resetPose(), [selectedVideo?.url, resetPose])
+  useEffect(() => {
+    savedReportVideoRef.current = null
+  }, [selectedVideo?.url])
 
   const handleAnalyzeFrame = useCallback(() => {
     const video = videoRef.current
@@ -201,6 +233,25 @@ function App() {
     () => (poseState.analysis?.completed ? analyzeJump(poseState.frames) : undefined),
     [poseState.analysis?.completed, poseState.frames],
   )
+  const coachReport = useMemo(
+    () => (jumpAnalysis ? buildCoachReport(jumpAnalysis) : undefined),
+    [jumpAnalysis],
+  )
+
+  useEffect(() => {
+    if (!selectedVideo || !coachReport || !jumpAnalysis || savedReportVideoRef.current === selectedVideo.url)
+      return
+    const saved = saveLocalReport({
+      videoName: selectedVideo.file.name,
+      videoSize: selectedVideo.file.size,
+      analysis: jumpAnalysis,
+      coachReport,
+    })
+    if (saved) {
+      savedReportVideoRef.current = selectedVideo.url
+      setLocalReports(listLocalReports())
+    }
+  }, [coachReport, jumpAnalysis, selectedVideo])
 
   return (
     <div className="app-shell">
@@ -336,7 +387,8 @@ function App() {
                     </div>
                   </div>
                 ) : null}
-                {jumpAnalysis ? <AnalysisReport analysis={jumpAnalysis} /> : null}
+                {coachReport ? <AnalysisReport report={coachReport} /> : null}
+                {coachReport ? <LocalHistory reports={localReports} /> : null}
                 <div className="video-summary">
                   <div className="file-identity">
                     <FileVideo aria-hidden="true" size={21} />
