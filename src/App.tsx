@@ -448,7 +448,7 @@ function App() {
 
       <footer>
         <span>YS专属训练师</span>
-        <span>当前阶段：姿态识别基础</span>
+        <span>当前阶段：动作指标分析</span>
       </footer>
     </div>
   )
