@@ -1,0 +1,20 @@
+{
+  "name": "YS专属训练师",
+  "short_name": "YS训练师",
+  "description": "通过侧面固定机位视频分析立定跳远动作，并提供可执行的改进建议。",
+  "lang": "zh-CN",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f8f4",
+  "theme_color": "#f7f8f4",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
