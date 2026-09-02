@@ -1,5 +1,13 @@
 const CACHE_VERSION = 'ys-trainer-shell-v1'
-const SHELL_CACHE = ['/', '/index.html', '/manifest.webmanifest', '/favicon.svg', '/side-jump-guide.svg']
+const SHELL_CACHE = [
+  '/',
+  '/index.html',
+  '/manifest.webmanifest',
+  '/favicon.svg',
+  '/side-jump-guide.svg',
+  '/icons/icon-192.svg',
+  '/icons/icon-512.svg',
+]
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_VERSION).then((cache) => cache.addAll(SHELL_CACHE)))
