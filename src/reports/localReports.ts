@@ -59,3 +59,7 @@ export function clearLocalReports() {
     // Storage may be disabled by the browser; the current analysis can still be viewed.
   }
 }
+
+export function removeLocalReport(id: string) {
+  writeReports(readReports().filter((report) => report.id !== id))
+}

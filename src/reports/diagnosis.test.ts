@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildCoachReport } from './diagnosis'
+import { buildCoachReport, compareCoachReports } from './diagnosis'
 import type { JumpAnalysis } from '../biomechanics/types'
 
 const base: JumpAnalysis = {
@@ -34,5 +34,13 @@ describe('教练诊断报告', () => {
     expect(report.coachingCue).toContain('膝盖')
     expect(report.observation).not.toContain('4')
     expect(report.drill).toContain('组')
+  })
+
+  it('比较前后两次报告时只输出自然语言变化', () => {
+    const previous = buildCoachReport(base)
+    const current = buildCoachReport({ ...base, priority: undefined })
+    const comparison = compareCoachReports(previous, current)
+    expect(comparison.title).toContain('稳定')
+    expect(comparison.detail).toContain('预蹬地')
   })
 })

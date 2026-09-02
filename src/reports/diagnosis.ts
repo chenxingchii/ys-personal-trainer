@@ -11,6 +11,12 @@ export type CoachReport = {
   confidenceNote: string
 }
 
+export type ComparisonReport = {
+  title: string
+  detail: string
+  action: string
+}
+
 const coachLabels: Record<string, string> = {
   'pre-push-shin': '预蹬地小腿控制',
   'pre-squat-knee': '预蹲深度控制',
@@ -99,4 +105,40 @@ export function buildCoachReport(analysis: JumpAnalysis): CoachReport {
     confidenceNote: '本报告基于侧面视频估计，仅作为训练参考。',
   }
   return { ...copy, hasPriority: true, priority: coachLabels[metric.id] ?? '动作节奏稳定性' }
+}
+
+export function compareCoachReports(previous: CoachReport, current: CoachReport): ComparisonReport {
+  if (!previous.hasPriority && !current.hasPriority) {
+    return {
+      title: '两次动作都保持稳定',
+      detail: '这次复测没有发现新的优先问题，说明当前动作节奏保持得比较好。',
+      action: '继续保持预蹬地、摆臂和落地的连贯性，再用后续视频观察稳定程度。',
+    }
+  }
+  if (previous.hasPriority && !current.hasPriority) {
+    return {
+      title: '这次复测整体更稳定了',
+      detail: `上次重点是“${previous.priority}”，这次暂时没有发现明确的优先问题。`,
+      action: '先保持这次的动作节奏，不要急着增加动作幅度或速度。',
+    }
+  }
+  if (!previous.hasPriority && current.hasPriority) {
+    return {
+      title: '这次出现了新的关注点',
+      detail: `上次没有明确问题，这次建议先关注“${current.priority}”。`,
+      action: current.coachingCue,
+    }
+  }
+  if (previous.priority === current.priority) {
+    return {
+      title: '主要问题仍然相同',
+      detail: `两次报告都指向“${current.priority}”，说明这是一项需要持续练习的基础能力。`,
+      action: current.coachingCue,
+    }
+  }
+  return {
+    title: '动作重点发生了变化',
+    detail: `上次重点是“${previous.priority}”，这次变为“${current.priority}”。`,
+    action: current.coachingCue,
+  }
 }

@@ -582,6 +582,72 @@ h1 {
   line-height: 1.5;
 }
 
+.quality-warning,
+.retest-prompt,
+.comparison-report {
+  display: grid;
+  gap: 5px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--line);
+}
+
+.quality-warning {
+  color: var(--track-dark);
+  background: #fff3ef;
+}
+
+.quality-warning strong,
+.retest-prompt strong,
+.comparison-report strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.quality-warning span,
+.retest-prompt span,
+.comparison-report p {
+  color: var(--quiet);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.retest-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  background: #f3f5ef;
+}
+
+.retest-prompt > div {
+  display: grid;
+  gap: 4px;
+}
+
+.retest-prompt .video-input {
+  min-height: 40px;
+  padding-inline: 13px;
+  font-size: 12px;
+}
+
+.comparison-report {
+  margin-top: 12px;
+  background: #eef5d7;
+  border: 1px solid #d8e6a0;
+  border-radius: 5px;
+}
+
+.comparison-report > span {
+  color: var(--track-dark);
+  font-family: var(--font-utility);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.comparison-report p {
+  margin: 0;
+}
+
 .local-history {
   display: flex;
   align-items: center;
@@ -898,6 +964,16 @@ footer {
 
   .analysis-report {
     padding: 18px 14px 20px;
+  }
+
+  .retest-prompt {
+    align-items: stretch;
+    flex-direction: column;
+    padding-inline: 14px;
+  }
+
+  .retest-prompt .video-input {
+    width: 100%;
   }
 
   .report-sections {

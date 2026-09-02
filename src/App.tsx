@@ -15,11 +15,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import { useVideoSelection } from './capture/useVideoSelection'
 import { formatBytes, formatDuration } from './capture/video'
+import { checkAnalysisQuality, checkVideoMetadata, type VideoQualityResult } from './capture/quality'
 import { PoseOverlay } from './pose/PoseOverlay'
 import type { PoseEngineState } from './pose/types'
 import { usePoseLandmarker } from './pose/usePoseLandmarker'
 import { analyzeJump } from './biomechanics/jumpAnalysis'
-import { buildCoachReport, type CoachReport } from './reports/diagnosis'
+import {
+  buildCoachReport,
+  compareCoachReports,
+  type CoachReport,
+  type ComparisonReport,
+} from './reports/diagnosis'
 import { listLocalReports, saveLocalReport, type LocalReport } from './reports/localReports'
 
 type VideoInputProps = {
@@ -113,7 +119,7 @@ function PoseStatus({ state }: { state: PoseEngineState }) {
   return <span>暂停到身体完整可见的一帧</span>
 }
 
-function AnalysisReport({ report }: { report: CoachReport }) {
+function AnalysisReport({ report, comparison }: { report: CoachReport; comparison?: ComparisonReport }) {
   return (
     <section className="analysis-report" aria-labelledby="analysis-report-title">
       <div className="report-heading">
@@ -165,6 +171,14 @@ function AnalysisReport({ report }: { report: CoachReport }) {
         </div>
       </div>
       <p className="analysis-note">{report.confidenceNote}</p>
+      {comparison ? (
+        <div className="comparison-report">
+          <span>复测对比</span>
+          <strong>{comparison.title}</strong>
+          <p>{comparison.detail}</p>
+          <p>{comparison.action}</p>
+        </div>
+      ) : null}
     </section>
   )
 }
@@ -195,11 +209,25 @@ function App() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [localReports, setLocalReports] = useState<LocalReport[]>(() => listLocalReports())
   const savedReportVideoRef = useRef<string | null>(null)
+  const [qualityCheck, setQualityCheck] = useState<VideoQualityResult | null>(null)
+  const [isRetest, setIsRetest] = useState(false)
+  const comparisonBaseRef = useRef<CoachReport | null>(null)
 
   useEffect(() => resetPose(), [selectedVideo?.url, resetPose])
   useEffect(() => {
     savedReportVideoRef.current = null
   }, [selectedVideo?.url])
+  useEffect(() => {
+    setQualityCheck(
+      metadata.value
+        ? checkVideoMetadata({
+            duration: metadata.value.duration,
+            videoWidth: metadata.value.width,
+            videoHeight: metadata.value.height,
+          })
+        : null,
+    )
+  }, [metadata.value])
 
   const handleAnalyzeFrame = useCallback(() => {
     const video = videoRef.current
@@ -233,9 +261,24 @@ function App() {
     () => (poseState.analysis?.completed ? analyzeJump(poseState.frames) : undefined),
     [poseState.analysis?.completed, poseState.frames],
   )
+  const analysisQuality = useMemo(
+    () => (jumpAnalysis ? checkAnalysisQuality(jumpAnalysis, metadata.value) : null),
+    [jumpAnalysis, metadata.value],
+  )
   const coachReport = useMemo(
-    () => (jumpAnalysis ? buildCoachReport(jumpAnalysis) : undefined),
-    [jumpAnalysis],
+    () =>
+      jumpAnalysis && (!analysisQuality || analysisQuality.passed)
+        ? buildCoachReport(jumpAnalysis)
+        : undefined,
+    [analysisQuality, jumpAnalysis],
+  )
+  const previousReport = comparisonBaseRef.current ?? localReports[0]?.coachReport
+  const comparison = useMemo(
+    () =>
+      isRetest && previousReport && coachReport
+        ? compareCoachReports(previousReport, coachReport)
+        : undefined,
+    [coachReport, isRetest, previousReport],
   )
 
   useEffect(() => {
@@ -252,6 +295,28 @@ function App() {
       setLocalReports(listLocalReports())
     }
   }, [coachReport, jumpAnalysis, selectedVideo])
+
+  const qualityMessage =
+    qualityCheck && !qualityCheck.passed
+      ? qualityCheck.issues[0]
+      : analysisQuality && !analysisQuality.passed
+        ? analysisQuality.issues[0]
+        : null
+  const qualityAdvice =
+    qualityCheck && !qualityCheck.passed
+      ? qualityCheck.advice[0]
+      : analysisQuality && !analysisQuality.passed
+        ? analysisQuality.advice[0]
+        : null
+
+  const handleRetestSelect = useCallback(
+    (file: File | null) => {
+      comparisonBaseRef.current = coachReport ?? localReports[0]?.coachReport ?? null
+      setIsRetest(true)
+      selectVideo(file)
+    },
+    [coachReport, localReports, selectVideo],
+  )
 
   return (
     <div className="app-shell">
@@ -375,7 +440,9 @@ function App() {
                         className="analyze-button analyze-button--secondary"
                         type="button"
                         onClick={handleAnalyzeVideo}
-                        disabled={poseState.phase === 'loading'}
+                        disabled={
+                          poseState.phase === 'loading' || Boolean(qualityCheck && !qualityCheck.passed)
+                        }
                       >
                         {poseState.phase === 'analyzing' && poseState.analysis ? (
                           <Square aria-hidden="true" size={17} />
@@ -387,8 +454,29 @@ function App() {
                     </div>
                   </div>
                 ) : null}
-                {coachReport ? <AnalysisReport report={coachReport} /> : null}
+                {qualityMessage ? (
+                  <div className="quality-warning" role="alert">
+                    <strong>暂时不能生成可靠诊断</strong>
+                    <span>{qualityMessage}</span>
+                    {qualityAdvice ? <span>{qualityAdvice}</span> : null}
+                  </div>
+                ) : null}
+                {coachReport ? <AnalysisReport report={coachReport} comparison={comparison} /> : null}
                 {coachReport ? <LocalHistory reports={localReports} /> : null}
+                {coachReport ? (
+                  <div className="retest-prompt">
+                    <div>
+                      <strong>想看看训练有没有效果？</strong>
+                      <span>再上传一次视频，系统会用同样的标准帮你做前后对比。</span>
+                    </div>
+                    <VideoInput
+                      icon={RotateCcw}
+                      label="上传第二次视频"
+                      tone="secondary"
+                      onSelect={handleRetestSelect}
+                    />
+                  </div>
+                ) : null}
                 <div className="video-summary">
                   <div className="file-identity">
                     <FileVideo aria-hidden="true" size={21} />
