@@ -1,7 +1,7 @@
 import { calculateAngle, calculateSignedArmAngle, pointOf, POSE_LANDMARKS, visibilityOf } from './angles'
 import type { PoseFrame } from '../pose/types'
 import { JUMP_RULES, JUMP_RULE_VERSION, type JumpRule } from '../rules/jumpRules'
-import type { JumpAnalysis, JumpPhaseFrames, MetricId, MetricResult } from './types'
+import type { JumpAnalysis, JumpPhaseFrames, JumpSeriesPoint, MetricId, MetricResult } from './types'
 
 type Side = 'left' | 'right'
 type FrameObservation = {
@@ -211,7 +211,10 @@ function priorityScore(result: MetricResult) {
   return score === undefined ? -1 : (100 - score) * result.weight * result.confidence
 }
 
-export function analyzeJump(frames: PoseFrame[]): JumpAnalysis | undefined {
+export function analyzeJump(
+  frames: PoseFrame[],
+  phaseOverrides: Partial<JumpPhaseFrames> = {},
+): JumpAnalysis | undefined {
   if (frames.length < 3) return undefined
   const firstHip = pointOf(frames[0], POSE_LANDMARKS.leftHip) ?? pointOf(frames[0], POSE_LANDMARKS.rightHip)
   const lastHip =
@@ -225,7 +228,7 @@ export function analyzeJump(frames: PoseFrame[]): JumpAnalysis | undefined {
   if (!primarySide) return undefined
   const knee = smooth(observations.map((item) => (primarySide === 'left' ? item.leftKnee : item.rightKnee)))
   const arm = smooth(observations.map((item) => (primarySide === 'left' ? item.leftArm : item.rightArm)))
-  const phases = buildPhases(observations, knee)
+  const phases = { ...buildPhases(observations, knee), ...phaseOverrides }
   const frameAt = (frameIndex: number | undefined) =>
     observations.findIndex((item) => item.frame.frameIndex === frameIndex)
   const pre = frameAt(phases.preSquat)
@@ -306,6 +309,14 @@ export function analyzeJump(frames: PoseFrame[]): JumpAnalysis | undefined {
     .filter((item) => item.status === 'needs-improvement')
     .sort((a, b) => priorityScore(b) - priorityScore(a))
   const quality = average(observations.map((item) => Math.max(item.leftQuality, item.rightQuality)))
+  const series: JumpSeriesPoint[] = observations.map((item) => ({
+    frameIndex: item.frame.frameIndex,
+    mediaTimeMs: item.frame.mediaTimeMs,
+    leftKnee: item.leftKnee,
+    rightKnee: item.rightKnee,
+    leftArm: item.leftArm,
+    rightArm: item.rightArm,
+  }))
   return {
     ruleVersion: JUMP_RULE_VERSION,
     direction,
@@ -313,6 +324,7 @@ export function analyzeJump(frames: PoseFrame[]): JumpAnalysis | undefined {
     quality,
     usableFrameCount: frames.length,
     phases,
+    series,
     metrics: results,
     score,
     priority: ranked[0],

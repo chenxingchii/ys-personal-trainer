@@ -35,6 +35,15 @@ export type JumpPhaseFrames = {
   landingLowest?: number
 }
 
+export type JumpSeriesPoint = {
+  frameIndex: number
+  mediaTimeMs: number
+  leftKnee?: number
+  rightKnee?: number
+  leftArm?: number
+  rightArm?: number
+}
+
 export type JumpAnalysis = {
   ruleVersion: string
   direction: 'left' | 'right' | 'unknown'
@@ -42,6 +51,7 @@ export type JumpAnalysis = {
   quality: number
   usableFrameCount: number
   phases: JumpPhaseFrames
+  series: JumpSeriesPoint[]
   metrics: MetricResult[]
   score?: number
   priority?: MetricResult

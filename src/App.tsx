@@ -19,7 +19,7 @@ import { PoseOverlay } from './pose/PoseOverlay'
 import type { PoseEngineState } from './pose/types'
 import { usePoseLandmarker } from './pose/usePoseLandmarker'
 import { analyzeJump } from './biomechanics/jumpAnalysis'
-import type { JumpAnalysis, MetricResult } from './biomechanics/types'
+import type { JumpAnalysis } from './biomechanics/types'
 
 type VideoInputProps = {
   capture?: 'environment'
@@ -112,44 +112,26 @@ function PoseStatus({ state }: { state: PoseEngineState }) {
   return <span>暂停到身体完整可见的一帧</span>
 }
 
-const metricStatusLabels = {
-  excellent: '优秀',
-  pass: '达标',
-  'needs-improvement': '待改进',
-  unavailable: '无法判断',
-} as const
-
-function MetricCard({ metric }: { metric: MetricResult }) {
-  return (
-    <article className={`metric-card metric-card--${metric.status}`}>
-      <div className="metric-card-heading">
-        <strong>{metric.label}</strong>
-        <span>{metricStatusLabels[metric.status]}</span>
-      </div>
-      <div className="metric-value">
-        {metric.value === undefined ? '—' : `${Math.round(metric.value)}${metric.unit}`}
-      </div>
-      <div className="metric-range">
-        建议 {metric.range[0]}°–{metric.range[1]}°
-      </div>
-    </article>
-  )
-}
-
 function AnalysisReport({ analysis }: { analysis: JumpAnalysis }) {
+  const friendlyLabels: Record<string, string> = {
+    'pre-squat-knee': '预蹲准备',
+    'takeoff-knee': '起跳蹬伸',
+    'backward-arm': '后摆蓄力',
+    'forward-arm': '前摆协同',
+    'arm-swing-range': '摆臂连贯性',
+    'landing-contact-knee': '落地姿态',
+    'landing-lowest-knee': '落地缓冲',
+    'landing-buffer': '落地缓冲',
+    'knee-asymmetry': '左右协同',
+  }
+  const priorityLabel = analysis.priority ? friendlyLabels[analysis.priority.id] : undefined
   return (
     <section className="analysis-report" aria-labelledby="analysis-report-title">
       <div className="report-heading">
         <div>
-          <span className="report-kicker">02 · 动作分析</span>
+          <span className="report-kicker">02 · 训练建议</span>
           <h2 id="analysis-report-title">这一次，先改哪一处？</h2>
         </div>
-        {analysis.score !== undefined ? (
-          <div className="score-display">
-            <strong>{analysis.score}</strong>
-            <span>动作技术完成度</span>
-          </div>
-        ) : null}
       </div>
 
       {analysis.priority ? (
@@ -158,12 +140,9 @@ function AnalysisReport({ analysis }: { analysis: JumpAnalysis }) {
             <Activity aria-hidden="true" size={20} />
           </div>
           <div>
-            <span>优先改进</span>
-            <strong>{analysis.priority.label}</strong>
-            <p>
-              当前检测 {Math.round(analysis.priority.value ?? 0)}°，建议范围 {analysis.priority.range[0]}°–
-              {analysis.priority.range[1]}°。{analysis.priority.hint}
-            </p>
+            <span>优先建议</span>
+            <strong>{priorityLabel}</strong>
+            <p>{analysis.priority.hint}</p>
           </div>
         </div>
       ) : (
@@ -173,27 +152,12 @@ function AnalysisReport({ analysis }: { analysis: JumpAnalysis }) {
           </div>
           <div>
             <span>本次结果</span>
-            <strong>主要指标都在建议区间内</strong>
+            <strong>暂未发现明确的优先问题</strong>
             <p>保持当前动作节奏，再用下一次视频观察是否稳定。</p>
           </div>
         </div>
       )}
-
-      <div className="report-meta">
-        <span>主侧：{analysis.primarySide === 'left' ? '左侧' : '右侧'}</span>
-        <span>
-          方向：{analysis.direction === 'left' ? '向左' : analysis.direction === 'right' ? '向右' : '未确定'}
-        </span>
-        <span>有效帧：{analysis.usableFrameCount}</span>
-        <span>规则：{analysis.ruleVersion}</span>
-      </div>
-
-      <div className="metric-grid">
-        {analysis.metrics.map((metric) => (
-          <MetricCard key={metric.id} metric={metric} />
-        ))}
-      </div>
-      <p className="analysis-note">{analysis.note}</p>
+      <p className="analysis-note">本次建议来自视频中的姿态变化，仅作为训练参考，不替代教练判断。</p>
     </section>
   )
 }

@@ -489,25 +489,6 @@ h1 {
   line-height: 1.2;
 }
 
-.score-display {
-  display: grid;
-  justify-items: end;
-  gap: 2px;
-  flex: 0 0 auto;
-}
-
-.score-display strong {
-  color: var(--field);
-  font-family: var(--font-utility);
-  font-size: 30px;
-  line-height: 1;
-}
-
-.score-display span {
-  color: var(--quiet);
-  font-size: 10px;
-}
-
 .priority-report {
   display: flex;
   align-items: flex-start;
@@ -559,95 +540,6 @@ h1 {
   color: var(--quiet);
   font-size: 12px;
   line-height: 1.55;
-}
-
-.report-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 18px;
-  margin-top: 16px;
-  color: var(--quiet);
-  font-family: var(--font-utility);
-  font-size: 10px;
-}
-
-.metric-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.metric-card {
-  min-width: 0;
-  padding: 12px;
-  background: white;
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--line-strong);
-  border-radius: 5px;
-}
-
-.metric-card--excellent {
-  border-left-color: var(--field);
-}
-
-.metric-card--pass {
-  border-left-color: var(--signal-dark);
-}
-
-.metric-card--needs-improvement {
-  border-left-color: var(--track);
-}
-
-.metric-card--unavailable {
-  border-left-color: var(--line-strong);
-  background: #f6f7f3;
-}
-
-.metric-card-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.metric-card-heading strong {
-  overflow: hidden;
-  color: var(--ink);
-  font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.metric-card-heading span {
-  flex: 0 0 auto;
-  color: var(--quiet);
-  font-family: var(--font-utility);
-  font-size: 9px;
-  font-weight: 800;
-}
-
-.metric-card--needs-improvement .metric-card-heading span {
-  color: var(--track);
-}
-
-.metric-card--excellent .metric-card-heading span {
-  color: var(--field);
-}
-
-.metric-value {
-  margin-top: 13px;
-  color: var(--ink);
-  font-family: var(--font-utility);
-  font-size: 22px;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.metric-range {
-  margin-top: 6px;
-  color: var(--quiet);
-  font-size: 10px;
 }
 
 .analysis-note {
@@ -927,10 +819,6 @@ footer {
 
   .report-heading h2 {
     font-size: 21px;
-  }
-
-  .metric-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .pose-controls {
