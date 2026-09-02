@@ -20,7 +20,8 @@ tags: [YS专属训练师, 项目进度, Android, PWA, MVP]
 - GitHub 私有仓库：<https://github.com/chenxingchii/ys-personal-trainer>
 - 本地远程名：`origin`
 - 本地远程地址：`https://github.com/chenxingchii/ys-personal-trainer.git`
-- 当前状态：远程地址已配置，但本机终端到 GitHub `443` 连接失败，尚未完成首次推送。
+- 当前状态：远程仓库已通过浏览器初始化 `main` 分支，目前只含占位 README；本地完整项目尚未同步到远程。
+- 当前阻塞：本机终端到 GitHub 的 Git HTTPS 传输不稳定，浏览器登录状态不会自动提供给终端 Git。
 - 安全边界：仓库保持私有；训练视频、个人身份信息和 API 密钥不得提交。
 
 ### 首次推送流程
@@ -32,6 +33,15 @@ git remote -v
 git ls-remote origin
 git push -u origin main
 ```
+
+如果 HTTPS 推送仍被重置，优先使用 GitHub Desktop 登录 `chenxingchii` 后添加本地仓库并推送 `main`；也可以在本机创建 SSH 密钥，将公钥添加到 GitHub 账号后切换地址：
+
+```bash
+git remote set-url origin git@github.com:chenxingchii/ys-personal-trainer.git
+git push -u origin main
+```
+
+完成同步后，应在 GitHub 仓库首页看到 `src/`、`public/`、`package.json` 和项目文档，而不只是占位 README。之后再在 Vercel 导入仓库，避免从不完整的远程仓库创建部署。
 
 若 GitHub 要求认证，使用 Git Credential Manager、Personal Access Token 或 GitHub Desktop 完成登录，不要把 Token 写入命令、文档或代码。推送前先确认：
 

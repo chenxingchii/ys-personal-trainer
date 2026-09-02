@@ -40,6 +40,8 @@ GitHub 私有仓库：<https://github.com/chenxingchii/ys-personal-trainer>
 git push -u origin main
 ```
 
+当前远程仓库已初始化 `main` 分支，但完整项目仍待首次同步；如果终端 HTTPS 推送被重置，请使用 GitHub Desktop，或配置 SSH 后再推送。确认 GitHub 首页出现 `src/`、`public/` 和 `package.json` 后，再在 Vercel 导入仓库。
+
 推送后在 Vercel 导入该私有仓库，构建命令使用 `pnpm build`，输出目录使用 `dist`。详细状态、认证注意事项和部署验收步骤见 [项目进度-Android演示版](./项目进度-Android演示版.md)。
 
 ### 后续优化路线
