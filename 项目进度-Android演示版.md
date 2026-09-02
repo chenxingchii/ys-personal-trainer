@@ -4,6 +4,8 @@ status: active
 para: inbox
 created: 2026-09-02
 updated: 2026-09-02
+deploy: https://ys-personal-trainer.vercel.app
+remote: https://github.com/chenxingchii/ys-personal-trainer
 tags: [YS专属训练师, 项目进度, Android, PWA, MVP]
 ---
 
@@ -13,55 +15,130 @@ tags: [YS专属训练师, 项目进度, Android, PWA, MVP]
 
 ## 当前结论
 
-项目已完成可演示的移动端 Web MVP，当前进入 **Android 演示版验证阶段**。核心流程可以在 Android Chrome 中运行；PWA 基础已经加入，后续可部署到 HTTPS 地址并安装到手机主屏幕。当前暂不处理 iOS、微信小程序和在线大模型诊断。
+项目已完成可演示的移动端 Web MVP，当前进入 **Android 演示版验证阶段**。完整项目已推送到 GitHub 私有仓库，并通过 Vercel 部署到固定 HTTPS 地址 <https://ys-personal-trainer.vercel.app>，可直接在 Android Chrome 打开并添加到主屏幕。核心流程可以在 Android Chrome 中运行；PWA 基础已加入。当前暂不处理 iOS、微信小程序和在线大模型诊断。
 
 ## 远程仓库与部署状态
 
 - GitHub 私有仓库：<https://github.com/chenxingchii/ys-personal-trainer>
 - 本地远程名：`origin`
-- 本地远程地址：`https://github.com/chenxingchii/ys-personal-trainer.git`
-- 当前状态：远程仓库已通过浏览器初始化 `main` 分支，目前只含占位 README；本地完整项目尚未同步到远程。
-- 当前阻塞：本机终端到 GitHub 的 Git HTTPS 传输不稳定，浏览器登录状态不会自动提供给终端 Git。
-- 安全边界：仓库保持私有；训练视频、个人身份信息和 API 密钥不得提交。
+- 本地远程地址：`git@github.com:chenxingchii/ys-personal-trainer.git`（SSH）
+- GitHub 账号：`chenxingchii`
+- 作者：陈星池（2807335477@qq.com），已配置为 git 用户
+- 当前分支：`main`
+- 远程状态：✅ 已推送完整项目，本地与 `origin/main` 一致（`git status` 干净）
+- Vercel 固定 HTTPS 地址：<https://ys-personal-trainer.vercel.app>
+- Vercel 生产部署：已就绪（READY），账号 `chenxingchii` / 项目 `ys-personal-trainer`
+- 安全边界：仓库保持私有；训练视频、个人身份信息和 API 密钥不得提交。`.env*`、`.vercel` 已加入 `.gitignore`。
 
-### 首次推送流程
+### SSH 配置方法（Windows 本机推送用）
 
-网络恢复后，在项目目录执行：
+为 GitHub 推送单独生成了一把 ed25519 密钥，避免与其他 GitHub 账号混淆：
 
-```bash
-git remote -v
-git ls-remote origin
-git push -u origin main
+```powershell
+# 1. 生成密钥（已生成，位于 %USERPROFILE%\.ssh\id_ed25519_ys_trainer）
+ssh-keygen -t ed25519 -C "2807335477@qq.com" -f "$env:USERPROFILE\.ssh\id_ed25519_ys_trainer"
+
+# 2. 查看公钥，粘贴到 GitHub → Settings → SSH and GPG keys → New SSH key
+Get-Content "$env:USERPROFILE\.ssh\id_ed25519_ys_trainer.pub"
+
+# 3. 测试连接（首次会询问指纹，输入 yes）
+ssh -T git@github.com
+
+# 4. 让 git 使用该密钥推送（或加入 ~/.ssh/config）
+GIT_SSH_COMMAND="ssh -i $env:USERPROFILE\.ssh\id_ed25519_ys_trainer -o IdentitiesOnly=yes"
 ```
 
-如果 HTTPS 推送仍被重置，优先使用 GitHub Desktop 登录 `chenxingchii` 后添加本地仓库并推送 `main`；也可以在本机创建 SSH 密钥，将公钥添加到 GitHub 账号后切换地址：
+推送用如下方式指定密钥：
 
 ```bash
+export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_ed25519_ys_trainer -o IdentitiesOnly=yes"
 git remote set-url origin git@github.com:chenxingchii/ys-personal-trainer.git
 git push -u origin main
 ```
 
-完成同步后，应在 GitHub 仓库首页看到 `src/`、`public/`、`package.json` 和项目文档，而不只是占位 README。之后再在 Vercel 导入仓库，避免从不完整的远程仓库创建部署。
+> 注意：本机可能存在多个 GitHub 账号/密钥。`IdentitiesOnly=yes` 可确保只使用这一把密钥，避免推送到错误的账号。
 
-若 GitHub 要求认证，使用 Git Credential Manager、Personal Access Token 或 GitHub Desktop 完成登录，不要把 Token 写入命令、文档或代码。推送前先确认：
+### 本地推送方法
+
+本地 `main` 分支已验证（`pnpm test` 39 项、`typecheck`、`format:check`、`build` 全部通过）后推送：
 
 ```bash
-git status --short
-git diff --check
+git remote set-url origin git@github.com:chenxingchii/ys-personal-trainer.git
+GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_ed25519_ys_trainer -o IdentitiesOnly=yes" git push -u origin main
 ```
 
-### Vercel 固定 HTTPS 部署流程
+### Vercel 部署配置（CLI 方式）
 
-首次推送成功后，在 Vercel 中导入该私有 GitHub 仓库，使用以下配置：
+已通过 Vercel CLI 完成部署，配置与网页导入等价：
 
 ```text
 安装命令：pnpm install --frozen-lockfile
 构建命令：pnpm build
 输出目录：dist
 生产分支：main
+框架预设：Vite（CLI 自动检测）
 ```
 
-Vercel 会生成固定的 `https://*.vercel.app` 生产地址；之后每次推送 `main` 都会自动重新部署。部署完成后，在 Android Chrome 打开生产地址并选择“添加到主屏幕”。首次 PWA 验收必须使用 HTTPS，不要用 `127.0.0.1` 或普通局域网 HTTP 地址替代。
+常用命令：
+
+```bash
+# 登录（设备码授权，需在浏览器确认）
+vercel login
+
+# 链接项目（已执行，生成 .vercel/project.json 与 .env.local）
+vercel link --yes --project ys-personal-trainer
+
+# 首次/后续生产部署
+vercel deploy --prod --yes
+
+# 查看部署状态
+vercel ls ys-personal-trainer
+```
+
+### 固定 HTTPS 地址
+
+- 正式地址：**https://ys-personal-trainer.vercel.app**（项目固定域名，专家 / 手机演示用这个）
+- 本次生产部署：`https://ys-personal-trainer-43fpgy7gd-xingchi.vercel.app`（带随机后缀，用于追溯本次构建）
+- 部署默认公开可访问（Deployment Protection 未阻断匿名访问）。
+
+> 网络提示：中国大陆网络直连 `*.vercel.app` 可能不稳定。电脑 / 手机需能正常访问 Vercel 域名（必要时开启代理）才能打开。
+
+### 后续更新流程
+
+每次改动后按以下方式提交并推送，Vercel 会自动重新部署：
+
+```bash
+git add .
+git commit -m "描述本次改动"
+GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_ed25519_ys_trainer -o IdentitiesOnly=yes" git push origin main
+```
+
+若尚未将 `GIT_SSH_COMMAND` 写入全局配置，请保留上面的前缀；推送成功后等待 1–2 分钟，Vercel 会自动用最新 `main` 生成新生产部署。
+
+### Android 手机演示验收步骤
+
+部署地址确认可访问后，在 Android Chrome 中逐项验收：
+
+1. 打开 **https://ys-personal-trainer.vercel.app**，等待模型资源加载完成（首次较慢）。
+2. 授权相机权限，拍摄一段视频。
+3. 或选择一段已录好的“侧面固定机位、全身入镜、准备到落地完整”的视频。
+4. 等待视频质量检查通过（时长、分辨率、姿态可识别）。
+5. 运行视频分析，等待生成教练式诊断报告。
+6. 点击“查看诊断报告”，确认报告不会消失。
+7. 再次拍摄 / 选择视频执行复测，查看前后对比报告。
+8. 打开本机历史报告，确认记录保留。
+9. 确认“训练计划 / 动作切换”为 MVP 占位入口。
+10. 确认展示的是通俗诊断结论，而非专业角度参数。
+11. 选择“添加到主屏幕”，验证独立窗口与离线缓存。
+
+### 当前限制
+
+- 目前只支持 Android 优先；iOS、微信小程序暂未处理。
+- 原始训练视频默认只保存在当前设备，不上传云端。
+- 历史报告只保存在当前设备（`localStorage` / IndexedDB 范畴），不跨设备同步。
+- 在线大模型诊断尚未接入；报告由本地规则引擎生成。
+- “训练计划 / 动作切换”暂为 MVP 占位入口，不具备配置与训练功能。
+- 暂无 APK/AAB；Capacitor 原生封装应在 PWA 真机验收稳定后进行。
 
 ## 已完成能力
 
@@ -80,11 +157,12 @@ Vercel 会生成固定的 `https://*.vercel.app` 生产地址；之后每次推�
 ## 当前明确限制
 
 - 历史记录当前保存视频元数据和派生报告，不保存原始视频 Blob，因此历史页暂时不能重新播放旧视频。
-- PWA 尚未部署到固定 HTTPS 域名，`127.0.0.1` 和局域网地址只适合开发调试。
+- 原始视频默认只保存在当前设备，不上传云端。
 - 还没有 APK/AAB；Capacitor 封装应在 PWA 真机验收后进行。
-- 训练计划和动作切换是 MVP 占位页，不具备配置和训练功能。
+- 训练计划和动作切换是 MVP 占位入口，不具备配置和训练功能。
 - 诊断规则仍需要真实训练视频和教练人工标注校准。
 - 报告由本地规则引擎生成；在线大模型只作为未来可选的语言润色层，不参与核心动作判断。
+- 中国大陆网络直连 `*.vercel.app` 可能不稳定，演示 / 访问需网络可达 Vercel 域名。
 
 ## 当前 Git 节点
 
@@ -94,22 +172,19 @@ Vercel 会生成固定的 `https://*.vercel.app` 生产地址；之后每次推�
 | `90463aa` | 保留诊断报告、增加复测拍摄入口、改善相机选择器调用 |
 | `914764b` | 补齐 Android PWA 图标                              |
 | `ea63d3e` | 添加 PWA manifest、Service Worker 和局域网调试命令 |
+| `8eb8b6e` | 忽略 Vercel 本地配置与环境变量文件                  |
+
+最近部署节点：`8eb8b6e`（已推送到 `origin/main`，Vercel 生产部署来自该提交）。
 
 工作区要求：每次代码或文档改动完成后必须创建对应 Git commit；不要把多个无关功能混在一个 commit 中。
 
 ## 下一步执行顺序
 
-### 1. 固定 Android 演示地址
+### 1. 固定 Android 演示地址 ✅ 已完成
 
-将项目部署到 Vercel、Cloudflare Pages 或 Netlify：
+已通过 Vercel 部署，固定地址：**https://ys-personal-trainer.vercel.app**（详情见上文「Vercel 部署配置」）。
 
-```text
-安装命令：pnpm install --frozen-lockfile
-构建命令：pnpm build
-输出目录：dist
-```
-
-部署后用 Android Chrome 打开 HTTPS 地址，选择“添加到主屏幕”，验证独立窗口和 Service Worker 缓存。
+下一步：用 Android Chrome 打开该 HTTPS 地址完成真机验收（见「Android 手机演示验收步骤」），验证独立窗口和 Service Worker 缓存。
 
 ### 2. Android 真机验收
 

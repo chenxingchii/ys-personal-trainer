@@ -33,16 +33,19 @@ pnpm dev:lan
 ### 远程仓库与固定 HTTPS
 
 GitHub 私有仓库：<https://github.com/chenxingchii/ys-personal-trainer>
+（`origin` 使用 SSH：`git@github.com:chenxingchii/ys-personal-trainer.git`）
 
-本地仓库已经配置 `origin`。首次推送使用：
+Vercel 固定 HTTPS 地址：**<https://ys-personal-trainer.vercel.app>**
+
+已部署到 Vercel 生产环境，后续每次推送 `main` 都会自动重新部署。推送使用项目专属 SSH 密钥：
 
 ```bash
-git push -u origin main
+git add .
+git commit -m "描述本次改动"
+GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_ed25519_ys_trainer -o IdentitiesOnly=yes" git push origin main
 ```
 
-当前远程仓库已初始化 `main` 分支，但完整项目仍待首次同步；如果终端 HTTPS 推送被重置，请使用 GitHub Desktop，或配置 SSH 后再推送。确认 GitHub 首页出现 `src/`、`public/` 和 `package.json` 后，再在 Vercel 导入仓库。
-
-推送后在 Vercel 导入该私有仓库，构建命令使用 `pnpm build`，输出目录使用 `dist`。详细状态、认证注意事项和部署验收步骤见 [项目进度-Android演示版](./项目进度-Android演示版.md)。
+SSH 密钥配置、Vercel 部署命令、Android 演示验收步骤和当前限制，详见 [项目进度-Android演示版](./项目进度-Android演示版.md)。
 
 ### 后续优化路线
 
