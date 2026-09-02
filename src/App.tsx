@@ -3,6 +3,7 @@ import {
   Camera,
   Check,
   FileVideo,
+  FileText,
   FolderOpen,
   LoaderCircle,
   RotateCcw,
@@ -39,6 +40,20 @@ type VideoInputProps = {
 function VideoInput({ capture, icon: Icon, label, tone, onSelect }: VideoInputProps) {
   const inputRef = useRef<HTMLInputElement>(null)
 
+  const openPicker = () => {
+    const input = inputRef.current
+    if (!input) return
+    try {
+      if (typeof input.showPicker === 'function') {
+        input.showPicker()
+        return
+      }
+    } catch {
+      // 某些 Android WebView 不允许 showPicker，继续使用 click 回退。
+    }
+    input.click()
+  }
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onSelect(event.target.files?.[0] ?? null)
     event.target.value = ''
@@ -46,11 +61,7 @@ function VideoInput({ capture, icon: Icon, label, tone, onSelect }: VideoInputPr
 
   return (
     <>
-      <button
-        className={`video-input video-input--${tone}`}
-        type="button"
-        onClick={() => inputRef.current?.click()}
-      >
+      <button className={`video-input video-input--${tone}`} type="button" onClick={openPicker}>
         <Icon aria-hidden="true" size={21} strokeWidth={2.2} />
         <span>{label}</span>
       </button>
@@ -212,6 +223,11 @@ function App() {
   const [qualityCheck, setQualityCheck] = useState<VideoQualityResult | null>(null)
   const [isRetest, setIsRetest] = useState(false)
   const comparisonBaseRef = useRef<CoachReport | null>(null)
+  const [reportSnapshot, setReportSnapshot] = useState<{
+    report: CoachReport
+    comparison?: ComparisonReport
+  } | null>(null)
+  const [showReport, setShowReport] = useState(false)
 
   useEffect(() => resetPose(), [selectedVideo?.url, resetPose])
   useEffect(() => {
@@ -296,6 +312,12 @@ function App() {
     }
   }, [coachReport, jumpAnalysis, selectedVideo])
 
+  useEffect(() => {
+    if (!coachReport) return
+    setReportSnapshot({ report: coachReport, comparison })
+    setShowReport(true)
+  }, [coachReport, comparison])
+
   const qualityMessage =
     qualityCheck && !qualityCheck.passed
       ? qualityCheck.issues[0]
@@ -313,9 +335,18 @@ function App() {
     (file: File | null) => {
       comparisonBaseRef.current = coachReport ?? localReports[0]?.coachReport ?? null
       setIsRetest(true)
+      setShowReport(false)
       selectVideo(file)
     },
     [coachReport, localReports, selectVideo],
+  )
+
+  const handleReplaceVideo = useCallback(
+    (file: File | null) => {
+      setShowReport(false)
+      selectVideo(file)
+    },
+    [selectVideo],
   )
 
   return (
@@ -461,20 +492,42 @@ function App() {
                     {qualityAdvice ? <span>{qualityAdvice}</span> : null}
                   </div>
                 ) : null}
-                {coachReport ? <AnalysisReport report={coachReport} comparison={comparison} /> : null}
-                {coachReport ? <LocalHistory reports={localReports} /> : null}
-                {coachReport ? (
+                {reportSnapshot ? (
+                  <button
+                    className="report-toggle"
+                    type="button"
+                    onClick={() => setShowReport((visible) => !visible)}
+                    aria-expanded={showReport}
+                  >
+                    <FileText aria-hidden="true" size={18} />
+                    <span>{showReport ? '收起诊断报告' : '查看诊断报告'}</span>
+                  </button>
+                ) : null}
+                {reportSnapshot && showReport ? (
+                  <AnalysisReport report={reportSnapshot.report} comparison={reportSnapshot.comparison} />
+                ) : null}
+                {reportSnapshot && showReport ? <LocalHistory reports={localReports} /> : null}
+                {reportSnapshot ? (
                   <div className="retest-prompt">
                     <div>
                       <strong>想看看训练有没有效果？</strong>
                       <span>再上传一次视频，系统会用同样的标准帮你做前后对比。</span>
                     </div>
-                    <VideoInput
-                      icon={RotateCcw}
-                      label="上传第二次视频"
-                      tone="secondary"
-                      onSelect={handleRetestSelect}
-                    />
+                    <div className="retest-actions">
+                      <VideoInput
+                        capture="environment"
+                        icon={Camera}
+                        label="拍摄第二次视频"
+                        tone="secondary"
+                        onSelect={handleRetestSelect}
+                      />
+                      <VideoInput
+                        icon={FolderOpen}
+                        label="选择第二次视频"
+                        tone="secondary"
+                        onSelect={handleRetestSelect}
+                      />
+                    </div>
                   </div>
                 ) : null}
                 <div className="video-summary">
@@ -500,7 +553,12 @@ function App() {
                     </dl>
                   ) : null}
                   <div className="video-tools">
-                    <VideoInput icon={RotateCcw} label="更换" tone="secondary" onSelect={selectVideo} />
+                    <VideoInput
+                      icon={RotateCcw}
+                      label="更换"
+                      tone="secondary"
+                      onSelect={handleReplaceVideo}
+                    />
                     <button
                       className="icon-button"
                       type="button"

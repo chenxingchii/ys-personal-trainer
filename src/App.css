@@ -619,6 +619,13 @@ h1 {
   background: #f3f5ef;
 }
 
+.retest-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .retest-prompt > div {
   display: grid;
   gap: 4px;
@@ -628,6 +635,32 @@ h1 {
   min-height: 40px;
   padding-inline: 13px;
   font-size: 12px;
+}
+
+.report-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 16px;
+  color: var(--ink);
+  background: #eef5d7;
+  border: 1px solid #d8e6a0;
+  border-radius: 5px;
+  font-size: 13px;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.report-toggle:hover {
+  border-color: var(--field);
+}
+
+.report-toggle:focus-visible {
+  outline: 3px solid var(--signal);
+  outline-offset: 3px;
 }
 
 .comparison-report {
@@ -974,6 +1007,12 @@ footer {
 
   .retest-prompt .video-input {
     width: 100%;
+  }
+
+  .retest-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 
   .report-sections {
