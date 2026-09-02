@@ -17,6 +17,16 @@ tags: [YS专属训练师, 项目进度, Android, PWA, MVP]
 
 项目已完成可演示的移动端 Web MVP，当前进入 **Android 演示版验证阶段**。完整项目已推送到 GitHub 私有仓库，并通过 Vercel 部署到固定 HTTPS 地址 <https://ys-personal-trainer.vercel.app>，可直接在 Android Chrome 打开并添加到主屏幕。核心流程可以在 Android Chrome 中运行；PWA 基础已加入。当前暂不处理 iOS、微信小程序和在线大模型诊断。
 
+### 📌 现在进行到哪一步
+
+- ✅ GitHub：完整项目已推送，`origin/main` 使用 SSH 专属密钥，本地与远程同步。
+- ✅ Vercel：生产部署 READY，固定地址 https://ys-personal-trainer.vercel.app。
+- ⏭️ **下一步：Android 真机验收**（见下方「Android 手机演示验收步骤」），这是当前唯一未完成的核心任务。
+- ⚠️ 待办（可选）：Vercel 网页端 `Settings → Git` 连接 GitHub，实现「push 即自动部署」。
+- ⚠️ 网络提示：中国大陆直连 `*.vercel.app` 可能不稳定，电脑 / 手机需能访问 Vercel 域名（必要时开代理）。
+
+> 若你是新接手此项目的 Agent：先读本文件，再对照 `git log --oneline` 与 `git status`；当前 HEAD 为 `18f5372`，工作区干净，直接进入上方的「下一步」即可。
+
 ## 远程仓库与部署状态
 
 - GitHub 私有仓库：<https://github.com/chenxingchii/ys-personal-trainer>
@@ -105,7 +115,7 @@ vercel ls ys-personal-trainer
 
 ### 后续更新流程
 
-每次改动后按以下方式提交并推送，Vercel 会自动重新部署：
+提交并推送：
 
 ```bash
 git add .
@@ -113,7 +123,13 @@ git commit -m "描述本次改动"
 GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_ed25519_ys_trainer -o IdentitiesOnly=yes" git push origin main
 ```
 
-若尚未将 `GIT_SSH_COMMAND` 写入全局配置，请保留上面的前缀；推送成功后等待 1–2 分钟，Vercel 会自动用最新 `main` 生成新生产部署。
+> ⚠️ **注意：Vercel 尚未连接 GitHub 自动部署。** `vercel link` 时连接 GitHub 仓库失败，所以 `git push` **不会**自动触发重新部署。要让最新代码上线，需在项目目录手动执行：
+>
+> ```bash
+> vercel deploy --prod --yes
+> ```
+>
+> 若希望「push 即自动部署」，先在 Vercel 网页 `Settings → Git` 连接本仓库并授权；连接成功后此提示可删除。
 
 ### Android 手机演示验收步骤
 
@@ -173,8 +189,10 @@ GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_ed25519_ys_trainer -o IdentitiesOnly=yes" 
 | `914764b` | 补齐 Android PWA 图标                              |
 | `ea63d3e` | 添加 PWA manifest、Service Worker 和局域网调试命令 |
 | `8eb8b6e` | 忽略 Vercel 本地配置与环境变量文件                  |
+| `18f5372` | 记录 GitHub SSH 推送与 Vercel 固定 HTTPS 部署完成状态 |
 
-最近部署节点：`8eb8b6e`（已推送到 `origin/main`，Vercel 生产部署来自该提交）。
+- 最新本地 / 远程提交：`18f5372`（HEAD，已推送到 `origin/main`，`git status` 干净）。
+- Vercel 生产部署来自 `8eb8b6e`（CLI 部署时 HEAD）；`18f5372` 为文档改动，未触发重新部署。
 
 工作区要求：每次代码或文档改动完成后必须创建对应 Git commit；不要把多个无关功能混在一个 commit 中。
 
