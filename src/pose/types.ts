@@ -62,6 +62,7 @@ export type PoseWorkerResponse =
   | {
       type: 'no-pose'
       requestId: string
+      frameIndex?: number
       mediaTimeMs: number
       inferenceTimeMs: number
     }
@@ -82,5 +83,14 @@ export type PoseEngineState = {
   loadTimeMs?: number
   fallbackReason?: string
   frame?: PoseFrame
+  analysis?: PoseAnalysisProgress
+  frames: PoseFrame[]
   error?: string
+}
+
+export type PoseAnalysisProgress = {
+  processedFrames: number
+  totalFrames?: number
+  progress?: number
+  completed: boolean
 }

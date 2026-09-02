@@ -21,6 +21,7 @@ const MODEL_PATHS: Record<PoseModelVariant, string> = {
 let poseLandmarker: PoseLandmarker | null = null
 let activeDelegate: PoseDelegate = 'CPU'
 let activeModel: PoseModelVariant = 'full'
+let lastTimestampMs = -1
 
 type VisionFileset = Awaited<ReturnType<typeof FilesetResolver.forVisionTasks>>
 
@@ -50,7 +51,7 @@ async function createLandmarker(
       delegate,
     },
     canvas,
-    runningMode: 'IMAGE',
+    runningMode: 'VIDEO',
     numPoses: 1,
     minPoseDetectionConfidence: 0.5,
     minPosePresenceConfidence: 0.5,
@@ -62,6 +63,7 @@ async function initialize(modelVariant: PoseModelVariant) {
   const startedAt = performance.now()
   poseLandmarker?.close()
   poseLandmarker = null
+  lastTimestampMs = -1
   activeModel = modelVariant
   send({ type: 'loading', stage: 'wasm' })
   const vision = await FilesetResolver.forVisionTasks(WASM_PATH, true)
@@ -97,7 +99,9 @@ function analyzeFrame(message: Extract<PoseWorkerRequest, { type: 'analyze-frame
   }
 
   try {
-    const result = poseLandmarker.detect(message.image)
+    const timestampMs = Math.max(message.mediaTimeMs, lastTimestampMs + 1)
+    lastTimestampMs = timestampMs
+    const result = poseLandmarker.detectForVideo(message.image, timestampMs)
     const inferenceTimeMs = performance.now() - startedAt
     const landmarks = result.landmarks[0]
 
@@ -105,6 +109,7 @@ function analyzeFrame(message: Extract<PoseWorkerRequest, { type: 'analyze-frame
       send({
         type: 'no-pose',
         requestId: message.requestId,
+        frameIndex: message.frameIndex,
         mediaTimeMs: message.mediaTimeMs,
         inferenceTimeMs,
       })
