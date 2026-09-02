@@ -28,7 +28,7 @@ tags: [YS专属训练师, 项目进度, Android, PWA, MVP]
 - ⚠️ 待办（可选）：Vercel 网页端 `Settings → Git` 连接 GitHub，实现「push 即自动部署」。
 - ⚠️ 网络提示：主地址 `*.vercel.app` 中国大陆直连可能不稳定；备用地址 `*.github.io` 裸连可访问。
 
-> 若你是新接手此项目的 Agent：先读本文件，再对照 `git log --oneline` 与 `git status`；当前 HEAD 为 `be37a6f`，工作区干净，先确认「网页端待办」的 Pages 状态，再进入 Android 真机验收。
+> 若你是新接手此项目的 Agent：先读本文件，再对照 `git log --oneline` 与 `git status`；当前 HEAD 为 `9634bc6`，工作区干净，先确认「网页端待办」的 Pages 状态，再进入 Android 真机验收。
 
 ## 远程仓库与部署状态
 
@@ -211,8 +211,9 @@ GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_ed25519_ys_trainer -o IdentitiesOnly=yes" 
 | `8eb8b6e` | 忽略 Vercel 本地配置与环境变量文件                     |
 | `18f5372` | 记录 GitHub SSH 推送与 Vercel 固定 HTTPS 部署完成状态  |
 | `be37a6f` | 资源路径改为 base 自适应，新增 GitHub Pages 部署工作流 |
+| `9634bc6` | 进度文档：记录 GitHub Pages 备用地址与网页端启用待办   |
 
-- 最新本地 / 远程提交：`be37a6f`（HEAD，已推送到 `origin/main`，`git status` 干净）。
+- 最新本地 / 远程提交：`9634bc6`（HEAD，已推送到 `origin/main`，`git status` 干净）。
 - Vercel 生产部署来自 `8eb8b6e`（CLI 部署时 HEAD）；`18f5372`、`be37a6f` 未触发 Vercel 重新部署。Pages 工作流会随 push 到 `main` 自动构建。
 
 工作区要求：每次代码或文档改动完成后必须创建对应 Git commit；不要把多个无关功能混在一个 commit 中。
