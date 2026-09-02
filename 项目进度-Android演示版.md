@@ -28,7 +28,7 @@ tags: [YS专属训练师, 项目进度, Android, PWA, MVP]
 - ⚠️ 待办（可选）：Vercel 网页端 `Settings → Git` 连接 GitHub，实现「push 即自动部署」。
 - ⚠️ 网络提示：主地址 `*.vercel.app` 中国大陆直连可能不稳定；备用地址 `*.github.io` 裸连可访问。
 
-> 若你是新接手此项目的 Agent：先读本文件，再对照 `git log --oneline` 与 `git status`；当前 HEAD 为 `9634bc6`，工作区干净，先确认「网页端待办」的 Pages 状态，再进入 Android 真机验收。
+> 若你是新接手此项目的 Agent：先读本文件，再用 `git log --oneline` 与 `git status` 确认最新提交与工作区状态，然后先确认「网页端待办」的 Pages 状态，再进入 Android 真机验收。
 
 ## 远程仓库与部署状态
 
@@ -40,7 +40,7 @@ tags: [YS专属训练师, 项目进度, Android, PWA, MVP]
 - 当前分支：`main`
 - 远程状态：✅ 已推送完整项目，本地与 `origin/main` 一致（`git status` 干净）
 - Vercel 固定 HTTPS 地址：<https://ys-personal-trainer.vercel.app>
-- Vercel 生产部署：已就绪（READY），账号 `chenxingchii` / 项目 `ys-personal-trainer`
+- Vercel 生产部署：已就绪（READY），账号 `chenxingchii` / 项目 `ys-personal-trainer`；已按 `main` 最新提交重新部署
 - 安全边界：为启用 GitHub Pages，仓库将改为公开（代码 / 文档 / git 历史公开可见，属已确认决策）；训练视频、个人身份信息和 API 密钥仍不得提交。`.env*`、`.vercel` 已加入 `.gitignore`，密钥仅存在于本地。
 
 ### SSH 配置方法（Windows 本机推送用）
@@ -212,9 +212,10 @@ GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_ed25519_ys_trainer -o IdentitiesOnly=yes" 
 | `18f5372` | 记录 GitHub SSH 推送与 Vercel 固定 HTTPS 部署完成状态  |
 | `be37a6f` | 资源路径改为 base 自适应，新增 GitHub Pages 部署工作流 |
 | `9634bc6` | 进度文档：记录 GitHub Pages 备用地址与网页端启用待办   |
+| `7bc1211` | 进度文档：同步 HEAD 记录                               |
 
-- 最新本地 / 远程提交：`9634bc6`（HEAD，已推送到 `origin/main`，`git status` 干净）。
-- Vercel 生产部署来自 `8eb8b6e`（CLI 部署时 HEAD）；`18f5372`、`be37a6f` 未触发 Vercel 重新部署。Pages 工作流会随 push 到 `main` 自动构建。
+- 最新本地 / 远程提交：`7bc1211`（已推送到 `origin/main`，`git status` 干净）。
+- Vercel 生产部署：首次来自 `8eb8b6e`（CLI 首部署）；后已执行 `vercel deploy --prod --yes`，以 `main` 最新提交（含 base 自适应）重新部署，固定地址现指向该新部署。Pages 工作流随 push 到 `main` 自动构建。
 
 工作区要求：每次代码或文档改动完成后必须创建对应 Git commit；不要把多个无关功能混在一个 commit 中。
 
