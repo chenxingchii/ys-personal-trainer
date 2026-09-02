@@ -1,0 +1,22 @@
+<svg width="620" height="330" viewBox="0 0 620 330" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M84 241C150 129 250 99 354 145C425 176 477 152 536 69" stroke="#D34B36" stroke-width="3" stroke-dasharray="8 9"/>
+  <g stroke="#17211D" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="129" cy="139" r="22" fill="#F7F8F4"/>
+    <path d="M130 163L147 211L112 243M146 210L181 245M139 181L102 205M139 181L176 165"/>
+  </g>
+  <g stroke="#17211D" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="320" cy="107" r="22" fill="#F7F8F4"/>
+    <path d="M319 131L342 177L304 204M341 176L385 203M327 148L286 126M327 148L370 123"/>
+  </g>
+  <g stroke="#17211D" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="501" cy="143" r="22" fill="#F7F8F4"/>
+    <path d="M493 166L465 209L502 239M466 208L447 248M482 184L452 161M482 184L519 200"/>
+  </g>
+  <g fill="#D5EB63" stroke="#17211D" stroke-width="3">
+    <circle cx="147" cy="211" r="7"/><circle cx="342" cy="177" r="7"/><circle cx="465" cy="209" r="7"/>
+    <circle cx="139" cy="181" r="7"/><circle cx="327" cy="148" r="7"/><circle cx="482" cy="184" r="7"/>
+  </g>
+  <g fill="#68716C" font-family="Consolas, monospace" font-size="12" font-weight="700">
+    <text x="91" y="292">准备</text><text x="300" y="292">腾空</text><text x="480" y="292">落地</text>
+  </g>
+</svg>
