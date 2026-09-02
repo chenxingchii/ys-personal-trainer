@@ -5,6 +5,7 @@ para: inbox
 created: 2026-09-02
 updated: 2026-09-02
 deploy: https://ys-personal-trainer.vercel.app
+deploy_pages: https://chenxingchii.github.io/ys-personal-trainer
 remote: https://github.com/chenxingchii/ys-personal-trainer
 tags: [YS专属训练师, 项目进度, Android, PWA, MVP]
 ---
@@ -15,17 +16,19 @@ tags: [YS专属训练师, 项目进度, Android, PWA, MVP]
 
 ## 当前结论
 
-项目已完成可演示的移动端 Web MVP，当前进入 **Android 演示版验证阶段**。完整项目已推送到 GitHub 私有仓库，并通过 Vercel 部署到固定 HTTPS 地址 <https://ys-personal-trainer.vercel.app>，可直接在 Android Chrome 打开并添加到主屏幕。核心流程可以在 Android Chrome 中运行；PWA 基础已加入。当前暂不处理 iOS、微信小程序和在线大模型诊断。
+项目已完成可演示的移动端 Web MVP，当前进入 **Android 演示版验证阶段**。完整项目已推送到 GitHub 仓库。主部署为 Vercel 固定 HTTPS 地址 <https://ys-personal-trainer.vercel.app>；因 `*.vercel.app` 在中国大陆裸连不稳定，另接入 GitHub Pages 备用地址（见「GitHub Pages 备用地址」）。可直接在 Android Chrome 打开并添加到主屏幕。核心流程可以在 Android Chrome 中运行；PWA 基础已加入。当前暂不处理 iOS、微信小程序和在线大模型诊断。
 
 ### 📌 现在进行到哪一步
 
-- ✅ GitHub：完整项目已推送，`origin/main` 使用 SSH 专属密钥，本地与远程同步。
-- ✅ Vercel：生产部署 READY，固定地址 https://ys-personal-trainer.vercel.app。
-- ⏭️ **下一步：Android 真机验收**（见下方「Android 手机演示验收步骤」），这是当前唯一未完成的核心任务。
+- ✅ GitHub：完整项目已推送，`origin/main` 使用 SSH 专属密钥，本地与远程同步（HEAD `be37a6f`）。
+- ✅ Vercel：生产部署 READY，主地址 https://ys-personal-trainer.vercel.app。
+- ✅ base 自适应：代码已支持根路径（Vercel）与 `/ys-personal-trainer/` 子路径（Pages）两种构建，本地两套构建均验证通过；Pages 工作流已推送。
+- ⏭️ **网页端待办（需人工）**：见「GitHub Pages 备用地址」——① 仓库改为公开；② `Settings → Pages → Source` 选 GitHub Actions；③ 若启用前工作流已失败，手动 Re-run。完成前 Pages 备用地址不可访问。
+- ⏭️ 之后回到核心任务：**Android 真机验收**（见「Android 手机演示验收步骤」）。
 - ⚠️ 待办（可选）：Vercel 网页端 `Settings → Git` 连接 GitHub，实现「push 即自动部署」。
-- ⚠️ 网络提示：中国大陆直连 `*.vercel.app` 可能不稳定，电脑 / 手机需能访问 Vercel 域名（必要时开代理）。
+- ⚠️ 网络提示：主地址 `*.vercel.app` 中国大陆直连可能不稳定；备用地址 `*.github.io` 裸连可访问。
 
-> 若你是新接手此项目的 Agent：先读本文件，再对照 `git log --oneline` 与 `git status`；当前 HEAD 为 `18f5372`，工作区干净，直接进入上方的「下一步」即可。
+> 若你是新接手此项目的 Agent：先读本文件，再对照 `git log --oneline` 与 `git status`；当前 HEAD 为 `be37a6f`，工作区干净，先确认「网页端待办」的 Pages 状态，再进入 Android 真机验收。
 
 ## 远程仓库与部署状态
 
@@ -38,7 +41,7 @@ tags: [YS专属训练师, 项目进度, Android, PWA, MVP]
 - 远程状态：✅ 已推送完整项目，本地与 `origin/main` 一致（`git status` 干净）
 - Vercel 固定 HTTPS 地址：<https://ys-personal-trainer.vercel.app>
 - Vercel 生产部署：已就绪（READY），账号 `chenxingchii` / 项目 `ys-personal-trainer`
-- 安全边界：仓库保持私有；训练视频、个人身份信息和 API 密钥不得提交。`.env*`、`.vercel` 已加入 `.gitignore`。
+- 安全边界：为启用 GitHub Pages，仓库将改为公开（代码 / 文档 / git 历史公开可见，属已确认决策）；训练视频、个人身份信息和 API 密钥仍不得提交。`.env*`、`.vercel` 已加入 `.gitignore`，密钥仅存在于本地。
 
 ### SSH 配置方法（Windows 本机推送用）
 
@@ -113,6 +116,23 @@ vercel ls ys-personal-trainer
 
 > 网络提示：中国大陆网络直连 `*.vercel.app` 可能不稳定。电脑 / 手机需能正常访问 Vercel 域名（必要时开启代理）才能打开。
 
+### GitHub Pages 备用地址
+
+中国大陆裸连可访问的备用地址：**https://chenxingchii.github.io/ys-personal-trainer/**（`github.io` 域名无需代理）。
+
+- 用途：Vercel 域名不稳定时使用；功能与主地址一致，PWA / 模型 / WASM 均已按子路径适配。
+- 实现：`.github/workflows/deploy-pages.yml`，`push` 到 `main` 自动构建（`VITE_BASE=/ys-personal-trainer/`）并发布到 Pages。
+- 前提（需在 GitHub 网页操作，无法用 CLI 完成）：
+  1. 仓库**改为公开**：`Settings → General → Danger Zone → Change visibility`。代码 / 文档 / git 历史将公开可见（已确认）；不得含密钥与个人敏感信息。
+  2. 开启 Pages 并选 Actions 源：`Settings → Pages → Source: GitHub Actions`。
+  3. 若在启用前工作流已运行且 deploy 失败，到 `Actions → Deploy GitHub Pages → Run workflow` 手动重跑一次。
+- 代码改动：`vite.config.ts` 读取 `VITE_BASE`（默认 `/`）；`index.html`、`App.tsx`、`main.tsx`、`public/sw.js`、`src/pose/pose.worker.ts`、`public/manifest.webmanifest` 均改为基于部署基址，Vercel（根路径）与 Pages（子路径）共用一份源码。本地构建用两条命令：
+
+```bash
+pnpm build                              # Vercel 根路径
+MSYS2_ENV_CONV_EXCL=VITE_BASE VITE_BASE=/ys-personal-trainer/ pnpm build   # Pages 子路径（Windows Git Bash 需排除 MSYS 路径转换）
+```
+
 ### 后续更新流程
 
 提交并推送：
@@ -178,31 +198,33 @@ GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_ed25519_ys_trainer -o IdentitiesOnly=yes" 
 - 训练计划和动作切换是 MVP 占位入口，不具备配置和训练功能。
 - 诊断规则仍需要真实训练视频和教练人工标注校准。
 - 报告由本地规则引擎生成；在线大模型只作为未来可选的语言润色层，不参与核心动作判断。
-- 中国大陆网络直连 `*.vercel.app` 可能不稳定，演示 / 访问需网络可达 Vercel 域名。
+- 中国大陆网络直连 `*.vercel.app` 可能不稳定；演示 / 访问建议用裸连可达的 GitHub Pages 备用地址。
 
 ## 当前 Git 节点
 
-| Commit    | 内容                                                  |
-| --------- | ----------------------------------------------------- |
-| `c053a3e` | 主界面功能导航、历史报告页和两个 MVP 占位页           |
-| `90463aa` | 保留诊断报告、增加复测拍摄入口、改善相机选择器调用    |
-| `914764b` | 补齐 Android PWA 图标                                 |
-| `ea63d3e` | 添加 PWA manifest、Service Worker 和局域网调试命令    |
-| `8eb8b6e` | 忽略 Vercel 本地配置与环境变量文件                    |
-| `18f5372` | 记录 GitHub SSH 推送与 Vercel 固定 HTTPS 部署完成状态 |
+| Commit    | 内容                                                   |
+| --------- | ------------------------------------------------------ |
+| `c053a3e` | 主界面功能导航、历史报告页和两个 MVP 占位页            |
+| `90463aa` | 保留诊断报告、增加复测拍摄入口、改善相机选择器调用     |
+| `914764b` | 补齐 Android PWA 图标                                  |
+| `ea63d3e` | 添加 PWA manifest、Service Worker 和局域网调试命令     |
+| `8eb8b6e` | 忽略 Vercel 本地配置与环境变量文件                     |
+| `18f5372` | 记录 GitHub SSH 推送与 Vercel 固定 HTTPS 部署完成状态  |
+| `be37a6f` | 资源路径改为 base 自适应，新增 GitHub Pages 部署工作流 |
 
-- 最新本地 / 远程提交：`18f5372`（HEAD，已推送到 `origin/main`，`git status` 干净）。
-- Vercel 生产部署来自 `8eb8b6e`（CLI 部署时 HEAD）；`18f5372` 为文档改动，未触发重新部署。
+- 最新本地 / 远程提交：`be37a6f`（HEAD，已推送到 `origin/main`，`git status` 干净）。
+- Vercel 生产部署来自 `8eb8b6e`（CLI 部署时 HEAD）；`18f5372`、`be37a6f` 未触发 Vercel 重新部署。Pages 工作流会随 push 到 `main` 自动构建。
 
 工作区要求：每次代码或文档改动完成后必须创建对应 Git commit；不要把多个无关功能混在一个 commit 中。
 
 ## 下一步执行顺序
 
-### 1. 固定 Android 演示地址 ✅ 已完成
+### 1. 固定 Android 演示地址 ✅ 已完成（含备用地址）
 
-已通过 Vercel 部署，固定地址：**https://ys-personal-trainer.vercel.app**（详情见上文「Vercel 部署配置」）。
+- Vercel 主地址：**https://ys-personal-trainer.vercel.app**（详情见「Vercel 部署配置」）
+- GitHub Pages 备用地址：**https://chenxingchii.github.io/ys-personal-trainer/**（需先完成「GitHub Pages 备用地址」网页端三步，部署成功后方可访问）
 
-下一步：用 Android Chrome 打开该 HTTPS 地址完成真机验收（见「Android 手机演示验收步骤」），验证独立窗口和 Service Worker 缓存。
+地址可访问后，用 Android Chrome 打开完成真机验收（见「Android 手机演示验收步骤」），验证独立窗口和 Service Worker 缓存。
 
 ### 2. Android 真机验收
 
