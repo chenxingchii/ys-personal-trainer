@@ -7,6 +7,7 @@ import {
   RotateCcw,
   ScanLine,
   ShieldCheck,
+  Square,
   Trash2,
 } from 'lucide-react'
 import { useCallback, useEffect, useRef } from 'react'
@@ -78,7 +79,22 @@ function PoseStatus({ state }: { state: PoseEngineState }) {
   if (state.phase === 'loading') {
     return <span>{loadingLabels[state.loadingStage ?? 'wasm']}</span>
   }
-  if (state.phase === 'analyzing') return <span>正在识别当前画面</span>
+  if (state.phase === 'analyzing') {
+    if (state.analysis) {
+      const progress = state.analysis.progress
+      return (
+        <span>
+          正在分析整段视频 · 已处理 {state.analysis.processedFrames} 帧
+          {state.analysis.totalFrames ? ` / ${state.analysis.totalFrames} 帧` : ''}
+          {progress !== undefined ? ` · ${Math.round(progress * 100)}%` : ''}
+        </span>
+      )
+    }
+    return <span>正在识别当前画面</span>
+  }
+  if (state.analysis?.completed) {
+    return <span>分析完成 · 有效姿态帧 {state.frames.length} 帧</span>
+  }
   if (state.phase === 'success' && state.frame) {
     return (
       <span>
@@ -95,7 +111,7 @@ function PoseStatus({ state }: { state: PoseEngineState }) {
 
 function App() {
   const { clearVideo, error, metadata, selectVideo, selectedVideo } = useVideoSelection()
-  const { analyzeFrame, clearResult, reset: resetPose, state: poseState } = usePoseLandmarker()
+  const { analyzeFrame, analyzeVideo, clearResult, reset: resetPose, state: poseState } = usePoseLandmarker()
   const videoRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => resetPose(), [selectedVideo?.url, resetPose])
@@ -107,6 +123,16 @@ function App() {
     void analyzeFrame(video).catch(() => undefined)
   }, [analyzeFrame])
 
+  const handleAnalyzeVideo = useCallback(() => {
+    if (poseState.phase === 'analyzing') {
+      resetPose()
+      return
+    }
+    const video = videoRef.current
+    if (!video) return
+    void analyzeVideo(video).catch(() => undefined)
+  }, [analyzeVideo, poseState.phase, resetPose])
+
   const handleVideoPositionChange = useCallback(() => {
     if (poseState.phase === 'loading' || poseState.phase === 'analyzing') {
       resetPose()
@@ -116,6 +142,7 @@ function App() {
   }, [clearResult, poseState.phase, resetPose])
 
   const poseIsBusy = poseState.phase === 'loading' || poseState.phase === 'analyzing'
+  const analysisProgress = poseState.analysis?.progress
 
   return (
     <div className="app-shell">
@@ -214,17 +241,23 @@ function App() {
                         <strong>姿态识别</strong>
                         <PoseStatus state={poseState} />
                         {poseState.fallbackReason ? <small>{poseState.fallbackReason}</small> : null}
+                        {poseState.analysis ? (
+                          <div className="analysis-progress" aria-label="整段分析进度">
+                            <span style={{ width: `${analysisProgress === undefined ? 100 : Math.round(analysisProgress * 100)}%` }} />
+                          </div>
+                        ) : null}
                       </div>
                     </div>
-                    <button
-                      className="analyze-button"
-                      type="button"
-                      onClick={handleAnalyzeFrame}
-                      disabled={poseIsBusy}
-                    >
-                      <ScanLine aria-hidden="true" size={19} />
-                      <span>{poseState.phase === 'success' ? '重新识别当前帧' : '识别当前帧'}</span>
-                    </button>
+                    <div className="analysis-actions">
+                      <button className="analyze-button" type="button" onClick={handleAnalyzeFrame} disabled={poseIsBusy}>
+                        <ScanLine aria-hidden="true" size={19} />
+                        <span>{poseState.phase === 'success' ? '重新识别当前帧' : '识别当前帧'}</span>
+                      </button>
+                      <button className="analyze-button analyze-button--secondary" type="button" onClick={handleAnalyzeVideo} disabled={poseState.phase === 'loading'}>
+                        {poseState.phase === 'analyzing' && poseState.analysis ? <Square aria-hidden="true" size={17} /> : <ScanLine aria-hidden="true" size={17} />}
+                        <span>{poseState.phase === 'analyzing' ? '停止整段分析' : '分析整段视频'}</span>
+                      </button>
+                    </div>
                   </div>
                 ) : null}
                 <div className="video-summary">
