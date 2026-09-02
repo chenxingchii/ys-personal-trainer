@@ -182,7 +182,19 @@ export function usePoseLandmarker() {
 
   const reset = useCallback(() => disposeWorker(true), [disposeWorker])
 
+  const clearResult = useCallback(() => {
+    setState((current) => {
+      if (current.phase === 'loading' || current.phase === 'analyzing') return current
+      return {
+        ...current,
+        phase: workerRef.current ? 'ready' : 'idle',
+        frame: undefined,
+        error: undefined,
+      }
+    })
+  }, [])
+
   useEffect(() => () => disposeWorker(false), [disposeWorker])
 
-  return { analyzeFrame, reset, state }
+  return { analyzeFrame, clearResult, reset, state }
 }

@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
 
 import { FilesetResolver, PoseLandmarker } from '@mediapipe/tasks-vision'
+import { createWithDelegateFallback } from './delegateFallback'
 import type {
   PoseDelegate,
   PoseFrame,
@@ -65,25 +66,19 @@ async function initialize(modelVariant: PoseModelVariant) {
   send({ type: 'loading', stage: 'wasm' })
   const vision = await FilesetResolver.forVisionTasks(WASM_PATH, true)
 
-  let fallbackReason: string | undefined
-
-  try {
-    send({ type: 'loading', stage: 'gpu' })
-    poseLandmarker = await createLandmarker(vision, modelVariant, 'GPU')
-    activeDelegate = 'GPU'
-  } catch {
-    fallbackReason = 'GPU 初始化失败，已自动切换到 CPU。'
-    send({ type: 'loading', stage: 'cpu' })
-    poseLandmarker = await createLandmarker(vision, modelVariant, 'CPU')
-    activeDelegate = 'CPU'
-  }
+  const created = await createWithDelegateFallback(
+    (delegate) => createLandmarker(vision, modelVariant, delegate),
+    (delegate) => send({ type: 'loading', stage: delegate === 'GPU' ? 'gpu' : 'cpu' }),
+  )
+  poseLandmarker = created.value
+  activeDelegate = created.delegate
 
   send({
     type: 'ready',
     delegate: activeDelegate,
     modelVariant: activeModel,
     loadTimeMs: performance.now() - startedAt,
-    fallbackReason,
+    fallbackReason: created.fallbackReason,
   })
 }
 

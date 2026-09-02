@@ -55,6 +55,26 @@ describe('视频准备页', () => {
     expect(createObjectURL).toHaveBeenCalledWith(file)
   })
 
+  it('视频元数据就绪后提供当前帧识别入口', () => {
+    const { container } = render(<App />)
+    const libraryInput = container.querySelector<HTMLInputElement>('input:not([capture])')
+
+    fireEvent.change(libraryInput!, {
+      target: { files: [new File(['video-data'], 'jump.mp4', { type: 'video/mp4' })] },
+    })
+    const video = container.querySelector('video')!
+    Object.defineProperties(video, {
+      duration: { configurable: true, value: 3.2 },
+      videoWidth: { configurable: true, value: 1920 },
+      videoHeight: { configurable: true, value: 1080 },
+    })
+    fireEvent.loadedMetadata(video)
+
+    expect(screen.getByRole('button', { name: '识别当前帧' })).toBeInTheDocument()
+    expect(screen.getByText('暂停到身体完整可见的一帧')).toBeInTheDocument()
+    expect(screen.getByText('1920 × 1080')).toBeInTheDocument()
+  })
+
   it('移除视频时释放对象 URL 并恢复选择入口', async () => {
     const { container } = render(<App />)
     const libraryInput = container.querySelector<HTMLInputElement>('input:not([capture])')

@@ -1,8 +1,21 @@
-import { Camera, Check, FileVideo, FolderOpen, RotateCcw, ShieldCheck, Trash2 } from 'lucide-react'
-import { useRef } from 'react'
+import {
+  Camera,
+  Check,
+  FileVideo,
+  FolderOpen,
+  LoaderCircle,
+  RotateCcw,
+  ScanLine,
+  ShieldCheck,
+  Trash2,
+} from 'lucide-react'
+import { useCallback, useEffect, useRef } from 'react'
 import './App.css'
 import { useVideoSelection } from './capture/useVideoSelection'
 import { formatBytes, formatDuration } from './capture/video'
+import { PoseOverlay } from './pose/PoseOverlay'
+import type { PoseEngineState } from './pose/types'
+import { usePoseLandmarker } from './pose/usePoseLandmarker'
 
 type VideoInputProps = {
   capture?: 'environment'
@@ -55,8 +68,54 @@ function EmptyStage() {
   )
 }
 
+const loadingLabels = {
+  wasm: '正在准备识别引擎',
+  gpu: '正在启动 GPU 模型',
+  cpu: '正在切换 CPU 模型',
+} as const
+
+function PoseStatus({ state }: { state: PoseEngineState }) {
+  if (state.phase === 'loading') {
+    return <span>{loadingLabels[state.loadingStage ?? 'wasm']}</span>
+  }
+  if (state.phase === 'analyzing') return <span>正在识别当前画面</span>
+  if (state.phase === 'success' && state.frame) {
+    return (
+      <span>
+        已识别 {state.frame.landmarks.length} 个关键点 · {state.frame.delegate} ·{' '}
+        {Math.round(state.frame.inferenceTimeMs)} ms
+      </span>
+    )
+  }
+  if (state.phase === 'no-pose') return <span>未识别到完整人体，请暂停到全身清晰可见的一帧</span>
+  if (state.phase === 'error') return <span>{state.error}</span>
+  if (state.phase === 'ready') return <span>模型已准备，暂停后可继续识别</span>
+  return <span>暂停到身体完整可见的一帧</span>
+}
+
 function App() {
   const { clearVideo, error, metadata, selectVideo, selectedVideo } = useVideoSelection()
+  const { analyzeFrame, clearResult, reset: resetPose, state: poseState } = usePoseLandmarker()
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  useEffect(() => resetPose(), [selectedVideo?.url, resetPose])
+
+  const handleAnalyzeFrame = useCallback(() => {
+    const video = videoRef.current
+    if (!video) return
+    video.pause()
+    void analyzeFrame(video).catch(() => undefined)
+  }, [analyzeFrame])
+
+  const handleVideoPositionChange = useCallback(() => {
+    if (poseState.phase === 'loading' || poseState.phase === 'analyzing') {
+      resetPose()
+    } else {
+      clearResult()
+    }
+  }, [clearResult, poseState.phase, resetPose])
+
+  const poseIsBusy = poseState.phase === 'loading' || poseState.phase === 'analyzing'
 
   return (
     <div className="app-shell">
@@ -124,6 +183,7 @@ function App() {
               <>
                 <div className="video-frame">
                   <video
+                    ref={videoRef}
                     key={selectedVideo.url}
                     src={selectedVideo.url}
                     controls
@@ -131,9 +191,42 @@ function App() {
                     preload="metadata"
                     onLoadedMetadata={metadata.handleLoadedMetadata}
                     onError={metadata.handleVideoError}
+                    onPlay={handleVideoPositionChange}
+                    onSeeking={handleVideoPositionChange}
                   />
                   {!metadata.value ? <div className="video-loading">正在读取视频信息</div> : null}
+                  {poseState.frame ? <PoseOverlay frame={poseState.frame} /> : null}
+                  {poseState.phase === 'success' ? (
+                    <div className="pose-detected-badge">骨架已锁定</div>
+                  ) : null}
                 </div>
+                {metadata.value ? (
+                  <div className={`pose-controls pose-controls--${poseState.phase}`}>
+                    <div className="pose-state" role={poseState.phase === 'error' ? 'alert' : 'status'}>
+                      <span className="pose-state-icon">
+                        {poseIsBusy ? (
+                          <LoaderCircle className="spinner" aria-hidden="true" size={18} />
+                        ) : (
+                          <ScanLine aria-hidden="true" size={18} />
+                        )}
+                      </span>
+                      <div>
+                        <strong>姿态识别</strong>
+                        <PoseStatus state={poseState} />
+                        {poseState.fallbackReason ? <small>{poseState.fallbackReason}</small> : null}
+                      </div>
+                    </div>
+                    <button
+                      className="analyze-button"
+                      type="button"
+                      onClick={handleAnalyzeFrame}
+                      disabled={poseIsBusy}
+                    >
+                      <ScanLine aria-hidden="true" size={19} />
+                      <span>{poseState.phase === 'success' ? '重新识别当前帧' : '识别当前帧'}</span>
+                    </button>
+                  </div>
+                ) : null}
                 <div className="video-summary">
                   <div className="file-identity">
                     <FileVideo aria-hidden="true" size={21} />
@@ -209,7 +302,7 @@ function App() {
 
       <footer>
         <span>YS专属训练师</span>
-        <span>当前阶段：视频准备</span>
+        <span>当前阶段：姿态识别基础</span>
       </footer>
     </div>
   )

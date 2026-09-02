@@ -301,6 +301,31 @@ h1 {
   object-fit: contain;
 }
 
+.pose-overlay {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.pose-detected-badge {
+  position: absolute;
+  z-index: 3;
+  top: 14px;
+  left: 14px;
+  padding: 7px 10px;
+  color: var(--ink);
+  background: var(--signal);
+  border: 1px solid var(--ink);
+  border-radius: 4px;
+  font-family: var(--font-utility);
+  font-size: 10px;
+  font-weight: 800;
+}
+
 .video-loading {
   position: absolute;
   inset: 0;
@@ -309,6 +334,117 @@ h1 {
   color: white;
   background: rgba(17, 23, 19, 0.72);
   font-size: 14px;
+}
+
+.pose-controls {
+  min-height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 12px 18px;
+  background: #f3f5ef;
+  border-top: 1px solid var(--line);
+}
+
+.pose-controls--success {
+  background: #eef5d7;
+}
+
+.pose-controls--error,
+.pose-controls--no-pose {
+  background: #fff3ef;
+}
+
+.pose-state {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.pose-state-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: var(--field);
+  background: white;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+}
+
+.pose-controls--error .pose-state-icon,
+.pose-controls--no-pose .pose-state-icon {
+  color: var(--track);
+}
+
+.pose-state > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.pose-state strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.pose-state span,
+.pose-state small {
+  color: var(--quiet);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.pose-state small {
+  color: var(--track-dark);
+}
+
+.analyze-button {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 0 14px;
+  color: white;
+  background: var(--field);
+  border: 1px solid var(--field);
+  border-radius: 5px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 740;
+  cursor: pointer;
+}
+
+.analyze-button:hover:not(:disabled) {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.analyze-button:focus-visible {
+  outline: 3px solid var(--signal);
+  outline-offset: 3px;
+}
+
+.analyze-button:disabled {
+  color: var(--quiet);
+  background: var(--line);
+  border-color: var(--line);
+  cursor: wait;
+}
+
+.spinner {
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .video-summary {
@@ -553,6 +689,17 @@ footer {
     gap: 14px;
   }
 
+  .pose-controls {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .analyze-button {
+    width: 100%;
+  }
+
   .video-metadata {
     grid-column: 1 / -1;
     grid-row: 2;
@@ -598,6 +745,7 @@ footer {
   *::before,
   *::after {
     scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
 }
