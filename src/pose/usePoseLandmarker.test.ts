@@ -165,4 +165,51 @@ describe('usePoseLandmarker', () => {
     expect(worker.terminate).toHaveBeenCalledOnce()
     expect(result.current.state.phase).toBe('idle')
   })
+
+  it('按媒体时间顺序分析整段有限时长视频并累计姿态帧', async () => {
+    const { result } = renderHook(() => usePoseLandmarker())
+    const target = new EventTarget()
+    let currentTime = 0
+    Object.defineProperties(target, {
+      readyState: { value: HTMLMediaElement.HAVE_ENOUGH_DATA },
+      duration: { value: 0.24 },
+      videoWidth: { value: 640 },
+      videoHeight: { value: 360 },
+      currentTime: {
+        get: () => currentTime,
+        set: (value: number) => {
+          currentTime = value
+          queueMicrotask(() => target.dispatchEvent(new Event('seeked')))
+        },
+      },
+      pause: { value: vi.fn() },
+    })
+    const video = target as unknown as HTMLVideoElement
+
+    let analysis: Promise<PoseFrame[]>
+    act(() => {
+      analysis = result.current.analyzeVideo(video, 120)
+      FakeWorker.latest.emit({ type: 'ready', delegate: 'CPU', modelVariant: 'full', loadTimeMs: 180 })
+    })
+
+    await waitFor(() => expect(FakeWorker.latest.messages).toHaveLength(2))
+    const first = FakeWorker.latest.messages[1].message as Extract<PoseWorkerRequest, { type: 'analyze-frame' }>
+    expect(first.mediaTimeMs).toBe(0)
+    act(() => FakeWorker.latest.emit({ type: 'result', requestId: first.requestId, frame: { ...poseFrame, frameIndex: 0, mediaTimeMs: 0 } }))
+
+    await waitFor(() => expect(FakeWorker.latest.messages).toHaveLength(3))
+    const second = FakeWorker.latest.messages[2].message as Extract<PoseWorkerRequest, { type: 'analyze-frame' }>
+    expect(second.mediaTimeMs).toBe(120)
+    act(() => FakeWorker.latest.emit({ type: 'result', requestId: second.requestId, frame: { ...poseFrame, frameIndex: 1, mediaTimeMs: 120 } }))
+
+    await waitFor(() => expect(FakeWorker.latest.messages).toHaveLength(4))
+    const third = FakeWorker.latest.messages[3].message as Extract<PoseWorkerRequest, { type: 'analyze-frame' }>
+    expect(third.mediaTimeMs).toBe(240)
+    act(() => FakeWorker.latest.emit({ type: 'no-pose', requestId: third.requestId, frameIndex: 2, mediaTimeMs: 240, inferenceTimeMs: 20 }))
+
+    await expect(analysis!).resolves.toHaveLength(2)
+    await waitFor(() => expect(result.current.state.phase).toBe('success'))
+    expect(result.current.state.frames).toHaveLength(2)
+    expect(result.current.state.analysis).toMatchObject({ processedFrames: 3, totalFrames: 3, progress: 1, completed: true })
+  })
 })
