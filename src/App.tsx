@@ -134,12 +134,13 @@ function App() {
   }, [analyzeVideo, poseState.phase, resetPose])
 
   const handleVideoPositionChange = useCallback(() => {
+    if (poseState.analysis && !poseState.analysis.completed) return
     if (poseState.phase === 'loading' || poseState.phase === 'analyzing') {
       resetPose()
     } else {
       clearResult()
     }
-  }, [clearResult, poseState.phase, resetPose])
+  }, [clearResult, poseState.analysis, poseState.phase, resetPose])
 
   const poseIsBusy = poseState.phase === 'loading' || poseState.phase === 'analyzing'
   const analysisProgress = poseState.analysis?.progress
@@ -243,18 +244,36 @@ function App() {
                         {poseState.fallbackReason ? <small>{poseState.fallbackReason}</small> : null}
                         {poseState.analysis ? (
                           <div className="analysis-progress" aria-label="整段分析进度">
-                            <span style={{ width: `${analysisProgress === undefined ? 100 : Math.round(analysisProgress * 100)}%` }} />
+                            <span
+                              style={{
+                                width: `${analysisProgress === undefined ? 100 : Math.round(analysisProgress * 100)}%`,
+                              }}
+                            />
                           </div>
                         ) : null}
                       </div>
                     </div>
                     <div className="analysis-actions">
-                      <button className="analyze-button" type="button" onClick={handleAnalyzeFrame} disabled={poseIsBusy}>
+                      <button
+                        className="analyze-button"
+                        type="button"
+                        onClick={handleAnalyzeFrame}
+                        disabled={poseIsBusy}
+                      >
                         <ScanLine aria-hidden="true" size={19} />
                         <span>{poseState.phase === 'success' ? '重新识别当前帧' : '识别当前帧'}</span>
                       </button>
-                      <button className="analyze-button analyze-button--secondary" type="button" onClick={handleAnalyzeVideo} disabled={poseState.phase === 'loading'}>
-                        {poseState.phase === 'analyzing' && poseState.analysis ? <Square aria-hidden="true" size={17} /> : <ScanLine aria-hidden="true" size={17} />}
+                      <button
+                        className="analyze-button analyze-button--secondary"
+                        type="button"
+                        onClick={handleAnalyzeVideo}
+                        disabled={poseState.phase === 'loading'}
+                      >
+                        {poseState.phase === 'analyzing' && poseState.analysis ? (
+                          <Square aria-hidden="true" size={17} />
+                        ) : (
+                          <ScanLine aria-hidden="true" size={17} />
+                        )}
                         <span>{poseState.phase === 'analyzing' ? '停止整段分析' : '分析整段视频'}</span>
                       </button>
                     </div>

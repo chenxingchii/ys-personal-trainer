@@ -193,23 +193,57 @@ describe('usePoseLandmarker', () => {
     })
 
     await waitFor(() => expect(FakeWorker.latest.messages).toHaveLength(2))
-    const first = FakeWorker.latest.messages[1].message as Extract<PoseWorkerRequest, { type: 'analyze-frame' }>
+    const first = FakeWorker.latest.messages[1].message as Extract<
+      PoseWorkerRequest,
+      { type: 'analyze-frame' }
+    >
     expect(first.mediaTimeMs).toBe(0)
-    act(() => FakeWorker.latest.emit({ type: 'result', requestId: first.requestId, frame: { ...poseFrame, frameIndex: 0, mediaTimeMs: 0 } }))
+    act(() =>
+      FakeWorker.latest.emit({
+        type: 'result',
+        requestId: first.requestId,
+        frame: { ...poseFrame, frameIndex: 0, mediaTimeMs: 0 },
+      }),
+    )
 
     await waitFor(() => expect(FakeWorker.latest.messages).toHaveLength(3))
-    const second = FakeWorker.latest.messages[2].message as Extract<PoseWorkerRequest, { type: 'analyze-frame' }>
+    const second = FakeWorker.latest.messages[2].message as Extract<
+      PoseWorkerRequest,
+      { type: 'analyze-frame' }
+    >
     expect(second.mediaTimeMs).toBe(120)
-    act(() => FakeWorker.latest.emit({ type: 'result', requestId: second.requestId, frame: { ...poseFrame, frameIndex: 1, mediaTimeMs: 120 } }))
+    act(() =>
+      FakeWorker.latest.emit({
+        type: 'result',
+        requestId: second.requestId,
+        frame: { ...poseFrame, frameIndex: 1, mediaTimeMs: 120 },
+      }),
+    )
 
     await waitFor(() => expect(FakeWorker.latest.messages).toHaveLength(4))
-    const third = FakeWorker.latest.messages[3].message as Extract<PoseWorkerRequest, { type: 'analyze-frame' }>
+    const third = FakeWorker.latest.messages[3].message as Extract<
+      PoseWorkerRequest,
+      { type: 'analyze-frame' }
+    >
     expect(third.mediaTimeMs).toBe(240)
-    act(() => FakeWorker.latest.emit({ type: 'no-pose', requestId: third.requestId, frameIndex: 2, mediaTimeMs: 240, inferenceTimeMs: 20 }))
+    act(() =>
+      FakeWorker.latest.emit({
+        type: 'no-pose',
+        requestId: third.requestId,
+        frameIndex: 2,
+        mediaTimeMs: 240,
+        inferenceTimeMs: 20,
+      }),
+    )
 
     await expect(analysis!).resolves.toHaveLength(2)
     await waitFor(() => expect(result.current.state.phase).toBe('success'))
     expect(result.current.state.frames).toHaveLength(2)
-    expect(result.current.state.analysis).toMatchObject({ processedFrames: 3, totalFrames: 3, progress: 1, completed: true })
+    expect(result.current.state.analysis).toMatchObject({
+      processedFrames: 3,
+      totalFrames: 3,
+      progress: 1,
+      completed: true,
+    })
   })
 })
