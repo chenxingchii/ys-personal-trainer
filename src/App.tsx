@@ -1,10 +1,14 @@
 import {
   Activity,
+  ArrowLeftRight,
   Camera,
   Check,
+  ClipboardList,
+  Dumbbell,
   FileVideo,
   FileText,
   FolderOpen,
+  History,
   LoaderCircle,
   RotateCcw,
   ScanLine,
@@ -36,6 +40,15 @@ type VideoInputProps = {
   tone: 'primary' | 'secondary'
   onSelect: (file: File | null) => void
 }
+
+type AppView = 'home' | 'diagnosis' | 'history' | 'training' | 'movement'
+
+const viewItems: Array<{ id: AppView; label: string; icon: typeof ClipboardList }> = [
+  { id: 'diagnosis', label: '动作诊断', icon: ClipboardList },
+  { id: 'history', label: '历史报告', icon: History },
+  { id: 'training', label: '训练计划', icon: Dumbbell },
+  { id: 'movement', label: '动作切换', icon: ArrowLeftRight },
+]
 
 function VideoInput({ capture, icon: Icon, label, tone, onSelect }: VideoInputProps) {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -214,6 +227,173 @@ function LocalHistory({ reports }: { reports: LocalReport[] }) {
   )
 }
 
+function MainNavigation({
+  activeView,
+  onNavigate,
+}: {
+  activeView: AppView
+  onNavigate: (view: AppView) => void
+}) {
+  return (
+    <nav className="main-navigation" aria-label="主功能导航">
+      {viewItems.map(({ id, label, icon: Icon }) => (
+        <button
+          className={`main-navigation__item ${activeView === id ? 'main-navigation__item--active' : ''}`}
+          key={id}
+          type="button"
+          onClick={() => onNavigate(id)}
+          aria-current={activeView === id ? 'page' : undefined}
+        >
+          <Icon aria-hidden="true" size={18} />
+          <span>{label}</span>
+        </button>
+      ))}
+    </nav>
+  )
+}
+
+function Dashboard({ reports, onNavigate }: { reports: LocalReport[]; onNavigate: (view: AppView) => void }) {
+  return (
+    <section className="dashboard" aria-labelledby="dashboard-title">
+      <div className="dashboard-heading">
+        <span className="dashboard-kicker">YS TRAINER / HOME</span>
+        <h1 id="dashboard-title">今天，先把这一跳看清楚。</h1>
+        <p>从一次侧面视频开始，找到最值得优先调整的动作。</p>
+      </div>
+      <div className="dashboard-grid">
+        <button
+          className="dashboard-card dashboard-card--primary"
+          type="button"
+          onClick={() => onNavigate('diagnosis')}
+        >
+          <ClipboardList aria-hidden="true" size={24} />
+          <span className="dashboard-card__label">动作诊断</span>
+          <strong>拍摄或选择视频</strong>
+          <span>生成一份教练式动作报告</span>
+        </button>
+        <button className="dashboard-card" type="button" onClick={() => onNavigate('history')}>
+          <History aria-hidden="true" size={24} />
+          <span className="dashboard-card__label">历史报告</span>
+          <strong>{reports.length ? `${reports.length} 份本机记录` : '还没有历史记录'}</strong>
+          <span>查看之前上传的视频与报告</span>
+        </button>
+        <button
+          className="dashboard-card dashboard-card--disabled"
+          type="button"
+          onClick={() => onNavigate('training')}
+        >
+          <Dumbbell aria-hidden="true" size={24} />
+          <span className="dashboard-card__label">训练计划</span>
+          <strong>针对问题安排训练</strong>
+          <span>即将开放 · 当前仅用于展示</span>
+        </button>
+        <button
+          className="dashboard-card dashboard-card--disabled"
+          type="button"
+          onClick={() => onNavigate('movement')}
+        >
+          <ArrowLeftRight aria-hidden="true" size={24} />
+          <span className="dashboard-card__label">动作切换</span>
+          <strong>选择其他训练动作</strong>
+          <span>即将开放 · 当前仅用于展示</span>
+        </button>
+      </div>
+      <div className="dashboard-footnote">
+        <span>当前支持</span>
+        <strong>立定跳远 · 侧面固定机位</strong>
+      </div>
+    </section>
+  )
+}
+
+function HistoryView({
+  reports,
+  selectedReport,
+  onOpenReport,
+  onCloseReport,
+}: {
+  reports: LocalReport[]
+  selectedReport: LocalReport | null
+  onOpenReport: (report: LocalReport) => void
+  onCloseReport: () => void
+}) {
+  return (
+    <section className="subpage" aria-labelledby="history-title">
+      <div className="subpage-heading">
+        <span className="dashboard-kicker">02 / HISTORY</span>
+        <h1 id="history-title">历史报告</h1>
+        <p>这里保存本机分析过的视频记录和对应的诊断报告。</p>
+      </div>
+      {selectedReport ? (
+        <div className="history-detail">
+          <button className="history-back" type="button" onClick={onCloseReport}>
+            <ArrowLeftRight aria-hidden="true" size={16} />
+            <span>返回历史列表</span>
+          </button>
+          <div className="history-detail__meta">
+            <FileVideo aria-hidden="true" size={19} />
+            <strong>{selectedReport.videoName}</strong>
+            <span>{new Date(selectedReport.createdAt).toLocaleString('zh-CN')}</span>
+          </div>
+          <AnalysisReport report={selectedReport.coachReport} />
+        </div>
+      ) : null}
+      {!selectedReport && reports.length ? (
+        <div className="history-list">
+          {reports.map((report) => (
+            <article className="history-card" key={report.id}>
+              <div className="history-card__icon">
+                <FileVideo aria-hidden="true" size={22} />
+              </div>
+              <div className="history-card__body">
+                <strong title={report.videoName}>{report.videoName}</strong>
+                <span>
+                  {new Date(report.createdAt).toLocaleString('zh-CN')} · {formatBytes(report.videoSize)}
+                </span>
+                <p>{report.coachReport.priority}</p>
+              </div>
+              <button className="history-card__action" type="button" onClick={() => onOpenReport(report)}>
+                <FileText aria-hidden="true" size={17} />
+                <span>查看报告</span>
+              </button>
+            </article>
+          ))}
+        </div>
+      ) : !selectedReport ? (
+        <div className="empty-subpage">
+          <History aria-hidden="true" size={30} />
+          <strong>还没有历史报告</strong>
+          <span>完成第一次动作诊断后，报告会保存在这台设备上。</span>
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
+function PlaceholderView({ view }: { view: 'training' | 'movement' }) {
+  const isTraining = view === 'training'
+  const Icon = isTraining ? Dumbbell : ArrowLeftRight
+  return (
+    <section className="subpage" aria-labelledby="placeholder-title">
+      <div className="placeholder-panel">
+        <span className="placeholder-icon">
+          <Icon aria-hidden="true" size={30} />
+        </span>
+        <span className="dashboard-kicker">{isTraining ? '03 / TRAINING' : '04 / MOVEMENT'}</span>
+        <h1 id="placeholder-title">{isTraining ? '训练计划' : '动作切换'}</h1>
+        <p>
+          {isTraining
+            ? '这里会根据你的诊断问题安排训练动作和练习节奏。'
+            : '这里会切换到深蹲、引体向上等其他动作。'}
+        </p>
+        <button className="placeholder-button" type="button" disabled>
+          {isTraining ? '训练计划即将开放' : '更多动作即将开放'}
+        </button>
+      </div>
+    </section>
+  )
+}
+
 function App() {
   const { clearVideo, error, metadata, selectVideo, selectedVideo } = useVideoSelection()
   const { analyzeFrame, analyzeVideo, clearResult, reset: resetPose, state: poseState } = usePoseLandmarker()
@@ -228,6 +408,8 @@ function App() {
     comparison?: ComparisonReport
   } | null>(null)
   const [showReport, setShowReport] = useState(false)
+  const [activeView, setActiveView] = useState<AppView>('home')
+  const [selectedHistoryReport, setSelectedHistoryReport] = useState<LocalReport | null>(null)
 
   useEffect(() => resetPose(), [selectedVideo?.url, resetPose])
   useEffect(() => {
@@ -349,263 +531,297 @@ function App() {
     [selectVideo],
   )
 
+  const handleOpenHistoryReport = useCallback((report: LocalReport) => {
+    setSelectedHistoryReport(report)
+  }, [])
+
   return (
     <div className="app-shell">
       <header className="topbar">
-        <a className="brand" href="/" aria-label="YS专属训练师首页">
+        <button
+          className="brand"
+          type="button"
+          onClick={() => setActiveView('home')}
+          aria-label="YS专属训练师首页"
+        >
           <span className="brand-mark">YS</span>
           <span>专属训练师</span>
-        </a>
+        </button>
         <div className="privacy-status">
           <ShieldCheck aria-hidden="true" size={17} />
           <span>本地处理</span>
         </div>
       </header>
 
+      <div className="navigation-wrap">
+        <MainNavigation activeView={activeView} onNavigate={setActiveView} />
+      </div>
+
       <main>
-        <section className="capture-section" aria-labelledby="capture-title">
-          <div className="capture-copy">
-            <div className="step-label">
-              <span>01</span>
-              <span>准备视频</span>
-            </div>
-            <h1 id="capture-title">拍下这一跳，找到下一次的发力重点。</h1>
-            <p className="lead">固定侧面机位，完整拍摄准备、起跳和落地。</p>
-
-            {!selectedVideo ? (
-              <div className="capture-actions" aria-label="选择视频来源">
-                <VideoInput
-                  capture="environment"
-                  icon={Camera}
-                  label="拍摄视频"
-                  tone="primary"
-                  onSelect={selectVideo}
-                />
-                <VideoInput icon={FolderOpen} label="选择已有视频" tone="secondary" onSelect={selectVideo} />
-              </div>
-            ) : (
-              <div className="ready-status" role="status">
-                <span className="ready-icon">
-                  <Check aria-hidden="true" size={18} strokeWidth={3} />
-                </span>
-                <div>
-                  <strong>视频已准备</strong>
-                  <span>确认画面包含完整的准备、起跳和落地</span>
+        {activeView === 'home' ? <Dashboard reports={localReports} onNavigate={setActiveView} /> : null}
+        {activeView === 'history' ? (
+          <HistoryView
+            reports={localReports}
+            selectedReport={selectedHistoryReport}
+            onOpenReport={handleOpenHistoryReport}
+            onCloseReport={() => setSelectedHistoryReport(null)}
+          />
+        ) : null}
+        {activeView === 'training' || activeView === 'movement' ? (
+          <PlaceholderView view={activeView} />
+        ) : null}
+        {activeView === 'diagnosis' ? (
+          <>
+            <section className="capture-section" aria-labelledby="capture-title">
+              <div className="capture-copy">
+                <div className="step-label">
+                  <span>01</span>
+                  <span>准备视频</span>
                 </div>
-              </div>
-            )}
+                <h1 id="capture-title">拍下这一跳，找到下一次的发力重点。</h1>
+                <p className="lead">固定侧面机位，完整拍摄准备、起跳和落地。</p>
 
-            {error ? (
-              <p className="error-message" role="alert">
-                {error}
-              </p>
-            ) : null}
-          </div>
-
-          <div className={`video-stage ${selectedVideo ? 'video-stage--active' : ''}`}>
-            <div className="stage-toolbar">
-              <span className="stage-state">
-                <span className="stage-dot" />
-                侧面固定机位
-              </span>
-              <span className="stage-format">单人 / 横屏</span>
-            </div>
-
-            {selectedVideo ? (
-              <>
-                <div className="video-frame">
-                  <video
-                    ref={videoRef}
-                    key={selectedVideo.url}
-                    src={selectedVideo.url}
-                    controls
-                    playsInline
-                    preload="metadata"
-                    onLoadedMetadata={metadata.handleLoadedMetadata}
-                    onError={metadata.handleVideoError}
-                    onPlay={handleVideoPositionChange}
-                    onSeeking={handleVideoPositionChange}
-                  />
-                  {!metadata.value ? <div className="video-loading">正在读取视频信息</div> : null}
-                  {poseState.frame ? <PoseOverlay frame={poseState.frame} /> : null}
-                  {poseState.phase === 'success' ? (
-                    <div className="pose-detected-badge">骨架已锁定</div>
-                  ) : null}
-                </div>
-                {metadata.value ? (
-                  <div className={`pose-controls pose-controls--${poseState.phase}`}>
-                    <div className="pose-state" role={poseState.phase === 'error' ? 'alert' : 'status'}>
-                      <span className="pose-state-icon">
-                        {poseIsBusy ? (
-                          <LoaderCircle className="spinner" aria-hidden="true" size={18} />
-                        ) : (
-                          <ScanLine aria-hidden="true" size={18} />
-                        )}
-                      </span>
-                      <div>
-                        <strong>姿态识别</strong>
-                        <PoseStatus state={poseState} />
-                        {poseState.fallbackReason ? <small>{poseState.fallbackReason}</small> : null}
-                        {poseState.analysis ? (
-                          <div className="analysis-progress" aria-label="整段分析进度">
-                            <span
-                              style={{
-                                width: `${analysisProgress === undefined ? 100 : Math.round(analysisProgress * 100)}%`,
-                              }}
-                            />
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
-                    <div className="analysis-actions">
-                      <button
-                        className="analyze-button"
-                        type="button"
-                        onClick={handleAnalyzeFrame}
-                        disabled={poseIsBusy}
-                      >
-                        <ScanLine aria-hidden="true" size={19} />
-                        <span>{poseState.phase === 'success' ? '重新识别当前帧' : '识别当前帧'}</span>
-                      </button>
-                      <button
-                        className="analyze-button analyze-button--secondary"
-                        type="button"
-                        onClick={handleAnalyzeVideo}
-                        disabled={
-                          poseState.phase === 'loading' || Boolean(qualityCheck && !qualityCheck.passed)
-                        }
-                      >
-                        {poseState.phase === 'analyzing' && poseState.analysis ? (
-                          <Square aria-hidden="true" size={17} />
-                        ) : (
-                          <ScanLine aria-hidden="true" size={17} />
-                        )}
-                        <span>{poseState.phase === 'analyzing' ? '停止整段分析' : '分析整段视频'}</span>
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-                {qualityMessage ? (
-                  <div className="quality-warning" role="alert">
-                    <strong>暂时不能生成可靠诊断</strong>
-                    <span>{qualityMessage}</span>
-                    {qualityAdvice ? <span>{qualityAdvice}</span> : null}
-                  </div>
-                ) : null}
-                {reportSnapshot ? (
-                  <button
-                    className="report-toggle"
-                    type="button"
-                    onClick={() => setShowReport((visible) => !visible)}
-                    aria-expanded={showReport}
-                  >
-                    <FileText aria-hidden="true" size={18} />
-                    <span>{showReport ? '收起诊断报告' : '查看诊断报告'}</span>
-                  </button>
-                ) : null}
-                {reportSnapshot && showReport ? (
-                  <AnalysisReport report={reportSnapshot.report} comparison={reportSnapshot.comparison} />
-                ) : null}
-                {reportSnapshot && showReport ? <LocalHistory reports={localReports} /> : null}
-                {reportSnapshot ? (
-                  <div className="retest-prompt">
-                    <div>
-                      <strong>想看看训练有没有效果？</strong>
-                      <span>再上传一次视频，系统会用同样的标准帮你做前后对比。</span>
-                    </div>
-                    <div className="retest-actions">
-                      <VideoInput
-                        capture="environment"
-                        icon={Camera}
-                        label="拍摄第二次视频"
-                        tone="secondary"
-                        onSelect={handleRetestSelect}
-                      />
-                      <VideoInput
-                        icon={FolderOpen}
-                        label="选择第二次视频"
-                        tone="secondary"
-                        onSelect={handleRetestSelect}
-                      />
-                    </div>
-                  </div>
-                ) : null}
-                <div className="video-summary">
-                  <div className="file-identity">
-                    <FileVideo aria-hidden="true" size={21} />
-                    <div>
-                      <strong title={selectedVideo.file.name}>{selectedVideo.file.name}</strong>
-                      <span>{formatBytes(selectedVideo.file.size)}</span>
-                    </div>
-                  </div>
-                  {metadata.value ? (
-                    <dl className="video-metadata">
-                      <div>
-                        <dt>时长</dt>
-                        <dd>{formatDuration(metadata.value.duration)}</dd>
-                      </div>
-                      <div>
-                        <dt>画面</dt>
-                        <dd>
-                          {metadata.value.width} × {metadata.value.height}
-                        </dd>
-                      </div>
-                    </dl>
-                  ) : null}
-                  <div className="video-tools">
+                {!selectedVideo ? (
+                  <div className="capture-actions" aria-label="选择视频来源">
                     <VideoInput
-                      icon={RotateCcw}
-                      label="更换"
-                      tone="secondary"
-                      onSelect={handleReplaceVideo}
+                      capture="environment"
+                      icon={Camera}
+                      label="拍摄视频"
+                      tone="primary"
+                      onSelect={selectVideo}
                     />
-                    <button
-                      className="icon-button"
-                      type="button"
-                      onClick={clearVideo}
-                      title="移除视频"
-                      aria-label="移除视频"
-                    >
-                      <Trash2 aria-hidden="true" size={20} />
-                    </button>
+                    <VideoInput
+                      icon={FolderOpen}
+                      label="选择已有视频"
+                      tone="secondary"
+                      onSelect={selectVideo}
+                    />
                   </div>
-                </div>
-              </>
-            ) : (
-              <EmptyStage />
-            )}
-          </div>
-        </section>
+                ) : (
+                  <div className="ready-status" role="status">
+                    <span className="ready-icon">
+                      <Check aria-hidden="true" size={18} strokeWidth={3} />
+                    </span>
+                    <div>
+                      <strong>视频已准备</strong>
+                      <span>确认画面包含完整的准备、起跳和落地</span>
+                    </div>
+                  </div>
+                )}
 
-        <section className="shooting-checks" aria-labelledby="checks-title">
-          <div className="checks-heading">
-            <span>拍摄基线</span>
-            <h2 id="checks-title">一次拍全，分析才有依据。</h2>
-          </div>
-          <ol>
-            <li>
-              <span className="check-number">1</span>
-              <div>
-                <strong>机位固定</strong>
-                <span>镜头与跳跃方向垂直</span>
+                {error ? (
+                  <p className="error-message" role="alert">
+                    {error}
+                  </p>
+                ) : null}
               </div>
-            </li>
-            <li>
-              <span className="check-number">2</span>
-              <div>
-                <strong>全身入镜</strong>
-                <span>保留起跳与落地区域</span>
+
+              <div className={`video-stage ${selectedVideo ? 'video-stage--active' : ''}`}>
+                <div className="stage-toolbar">
+                  <span className="stage-state">
+                    <span className="stage-dot" />
+                    侧面固定机位
+                  </span>
+                  <span className="stage-format">单人 / 横屏</span>
+                </div>
+
+                {selectedVideo ? (
+                  <>
+                    <div className="video-frame">
+                      <video
+                        ref={videoRef}
+                        key={selectedVideo.url}
+                        src={selectedVideo.url}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        onLoadedMetadata={metadata.handleLoadedMetadata}
+                        onError={metadata.handleVideoError}
+                        onPlay={handleVideoPositionChange}
+                        onSeeking={handleVideoPositionChange}
+                      />
+                      {!metadata.value ? <div className="video-loading">正在读取视频信息</div> : null}
+                      {poseState.frame ? <PoseOverlay frame={poseState.frame} /> : null}
+                      {poseState.phase === 'success' ? (
+                        <div className="pose-detected-badge">骨架已锁定</div>
+                      ) : null}
+                    </div>
+                    {metadata.value ? (
+                      <div className={`pose-controls pose-controls--${poseState.phase}`}>
+                        <div className="pose-state" role={poseState.phase === 'error' ? 'alert' : 'status'}>
+                          <span className="pose-state-icon">
+                            {poseIsBusy ? (
+                              <LoaderCircle className="spinner" aria-hidden="true" size={18} />
+                            ) : (
+                              <ScanLine aria-hidden="true" size={18} />
+                            )}
+                          </span>
+                          <div>
+                            <strong>姿态识别</strong>
+                            <PoseStatus state={poseState} />
+                            {poseState.fallbackReason ? <small>{poseState.fallbackReason}</small> : null}
+                            {poseState.analysis ? (
+                              <div className="analysis-progress" aria-label="整段分析进度">
+                                <span
+                                  style={{
+                                    width: `${analysisProgress === undefined ? 100 : Math.round(analysisProgress * 100)}%`,
+                                  }}
+                                />
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                        <div className="analysis-actions">
+                          <button
+                            className="analyze-button"
+                            type="button"
+                            onClick={handleAnalyzeFrame}
+                            disabled={poseIsBusy}
+                          >
+                            <ScanLine aria-hidden="true" size={19} />
+                            <span>{poseState.phase === 'success' ? '重新识别当前帧' : '识别当前帧'}</span>
+                          </button>
+                          <button
+                            className="analyze-button analyze-button--secondary"
+                            type="button"
+                            onClick={handleAnalyzeVideo}
+                            disabled={
+                              poseState.phase === 'loading' || Boolean(qualityCheck && !qualityCheck.passed)
+                            }
+                          >
+                            {poseState.phase === 'analyzing' && poseState.analysis ? (
+                              <Square aria-hidden="true" size={17} />
+                            ) : (
+                              <ScanLine aria-hidden="true" size={17} />
+                            )}
+                            <span>{poseState.phase === 'analyzing' ? '停止整段分析' : '分析整段视频'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+                    {qualityMessage ? (
+                      <div className="quality-warning" role="alert">
+                        <strong>暂时不能生成可靠诊断</strong>
+                        <span>{qualityMessage}</span>
+                        {qualityAdvice ? <span>{qualityAdvice}</span> : null}
+                      </div>
+                    ) : null}
+                    {reportSnapshot ? (
+                      <button
+                        className="report-toggle"
+                        type="button"
+                        onClick={() => setShowReport((visible) => !visible)}
+                        aria-expanded={showReport}
+                      >
+                        <FileText aria-hidden="true" size={18} />
+                        <span>{showReport ? '收起诊断报告' : '查看诊断报告'}</span>
+                      </button>
+                    ) : null}
+                    {reportSnapshot && showReport ? (
+                      <AnalysisReport report={reportSnapshot.report} comparison={reportSnapshot.comparison} />
+                    ) : null}
+                    {reportSnapshot && showReport ? <LocalHistory reports={localReports} /> : null}
+                    {reportSnapshot ? (
+                      <div className="retest-prompt">
+                        <div>
+                          <strong>想看看训练有没有效果？</strong>
+                          <span>再上传一次视频，系统会用同样的标准帮你做前后对比。</span>
+                        </div>
+                        <div className="retest-actions">
+                          <VideoInput
+                            capture="environment"
+                            icon={Camera}
+                            label="拍摄第二次视频"
+                            tone="secondary"
+                            onSelect={handleRetestSelect}
+                          />
+                          <VideoInput
+                            icon={FolderOpen}
+                            label="选择第二次视频"
+                            tone="secondary"
+                            onSelect={handleRetestSelect}
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+                    <div className="video-summary">
+                      <div className="file-identity">
+                        <FileVideo aria-hidden="true" size={21} />
+                        <div>
+                          <strong title={selectedVideo.file.name}>{selectedVideo.file.name}</strong>
+                          <span>{formatBytes(selectedVideo.file.size)}</span>
+                        </div>
+                      </div>
+                      {metadata.value ? (
+                        <dl className="video-metadata">
+                          <div>
+                            <dt>时长</dt>
+                            <dd>{formatDuration(metadata.value.duration)}</dd>
+                          </div>
+                          <div>
+                            <dt>画面</dt>
+                            <dd>
+                              {metadata.value.width} × {metadata.value.height}
+                            </dd>
+                          </div>
+                        </dl>
+                      ) : null}
+                      <div className="video-tools">
+                        <VideoInput
+                          icon={RotateCcw}
+                          label="更换"
+                          tone="secondary"
+                          onSelect={handleReplaceVideo}
+                        />
+                        <button
+                          className="icon-button"
+                          type="button"
+                          onClick={clearVideo}
+                          title="移除视频"
+                          aria-label="移除视频"
+                        >
+                          <Trash2 aria-hidden="true" size={20} />
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <EmptyStage />
+                )}
               </div>
-            </li>
-            <li>
-              <span className="check-number">3</span>
-              <div>
-                <strong>动作完整</strong>
-                <span>从站稳开始，到落地稳定结束</span>
+            </section>
+
+            <section className="shooting-checks" aria-labelledby="checks-title">
+              <div className="checks-heading">
+                <span>拍摄基线</span>
+                <h2 id="checks-title">一次拍全，分析才有依据。</h2>
               </div>
-            </li>
-          </ol>
-        </section>
+              <ol>
+                <li>
+                  <span className="check-number">1</span>
+                  <div>
+                    <strong>机位固定</strong>
+                    <span>镜头与跳跃方向垂直</span>
+                  </div>
+                </li>
+                <li>
+                  <span className="check-number">2</span>
+                  <div>
+                    <strong>全身入镜</strong>
+                    <span>保留起跳与落地区域</span>
+                  </div>
+                </li>
+                <li>
+                  <span className="check-number">3</span>
+                  <div>
+                    <strong>动作完整</strong>
+                    <span>从站稳开始，到落地稳定结束</span>
+                  </div>
+                </li>
+              </ol>
+            </section>
+          </>
+        ) : null}
       </main>
 
       <footer>

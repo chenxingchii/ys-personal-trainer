@@ -23,6 +23,7 @@ describe('视频准备页', () => {
 
   it('提供拍摄和本地选择两个视频入口', () => {
     const { container } = render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /^动作诊断$/ }))
 
     expect(screen.getByRole('button', { name: '拍摄视频' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '选择已有视频' })).toBeInTheDocument()
@@ -33,6 +34,7 @@ describe('视频准备页', () => {
 
   it('选择非视频文件时显示错误', () => {
     const { container } = render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /^动作诊断$/ }))
     const libraryInput = container.querySelector<HTMLInputElement>('input:not([capture])')
 
     fireEvent.change(libraryInput!, {
@@ -45,6 +47,7 @@ describe('视频准备页', () => {
 
   it('选择视频后显示准备状态和文件信息', () => {
     const { container } = render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /^动作诊断$/ }))
     const libraryInput = container.querySelector<HTMLInputElement>('input:not([capture])')
     const file = new File(['video-data'], '立定跳远.mp4', { type: 'video/mp4' })
 
@@ -57,6 +60,7 @@ describe('视频准备页', () => {
 
   it('视频元数据就绪后提供当前帧识别入口', () => {
     const { container } = render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /^动作诊断$/ }))
     const libraryInput = container.querySelector<HTMLInputElement>('input:not([capture])')
 
     fireEvent.change(libraryInput!, {
@@ -77,6 +81,7 @@ describe('视频准备页', () => {
 
   it('移除视频时释放对象 URL 并恢复选择入口', async () => {
     const { container } = render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /^动作诊断$/ }))
     const libraryInput = container.querySelector<HTMLInputElement>('input:not([capture])')
 
     fireEvent.change(libraryInput!, {
@@ -87,5 +92,27 @@ describe('视频准备页', () => {
     await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledTimes(1))
     expect(revokeObjectURL).toHaveBeenCalledWith(objectUrl)
     expect(screen.getByRole('button', { name: '拍摄视频' })).toBeInTheDocument()
+  })
+
+  it('默认进入主界面并提供四个功能入口', () => {
+    render(<App />)
+
+    expect(screen.getByRole('heading', { name: '今天，先把这一跳看清楚。' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '动作诊断' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '历史报告' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '训练计划' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '动作切换' })).toBeInTheDocument()
+  })
+
+  it('训练计划和动作切换显示 MVP 占位状态', () => {
+    render(<App />)
+
+    fireEvent.click(screen.getByRole('button', { name: /^训练计划$/ }))
+    expect(screen.getByRole('heading', { name: '训练计划' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '训练计划即将开放' })).toBeDisabled()
+
+    fireEvent.click(screen.getByRole('button', { name: /^动作切换$/ }))
+    expect(screen.getByRole('heading', { name: '动作切换' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '更多动作即将开放' })).toBeDisabled()
   })
 })
