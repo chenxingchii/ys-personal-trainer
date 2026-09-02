@@ -1,4 +1,5 @@
 import {
+  Activity,
   Camera,
   Check,
   FileVideo,
@@ -10,13 +11,15 @@ import {
   Square,
   Trash2,
 } from 'lucide-react'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import './App.css'
 import { useVideoSelection } from './capture/useVideoSelection'
 import { formatBytes, formatDuration } from './capture/video'
 import { PoseOverlay } from './pose/PoseOverlay'
 import type { PoseEngineState } from './pose/types'
 import { usePoseLandmarker } from './pose/usePoseLandmarker'
+import { analyzeJump } from './biomechanics/jumpAnalysis'
+import type { JumpAnalysis, MetricResult } from './biomechanics/types'
 
 type VideoInputProps = {
   capture?: 'environment'
@@ -109,6 +112,92 @@ function PoseStatus({ state }: { state: PoseEngineState }) {
   return <span>暂停到身体完整可见的一帧</span>
 }
 
+const metricStatusLabels = {
+  excellent: '优秀',
+  pass: '达标',
+  'needs-improvement': '待改进',
+  unavailable: '无法判断',
+} as const
+
+function MetricCard({ metric }: { metric: MetricResult }) {
+  return (
+    <article className={`metric-card metric-card--${metric.status}`}>
+      <div className="metric-card-heading">
+        <strong>{metric.label}</strong>
+        <span>{metricStatusLabels[metric.status]}</span>
+      </div>
+      <div className="metric-value">
+        {metric.value === undefined ? '—' : `${Math.round(metric.value)}${metric.unit}`}
+      </div>
+      <div className="metric-range">
+        建议 {metric.range[0]}°–{metric.range[1]}°
+      </div>
+    </article>
+  )
+}
+
+function AnalysisReport({ analysis }: { analysis: JumpAnalysis }) {
+  return (
+    <section className="analysis-report" aria-labelledby="analysis-report-title">
+      <div className="report-heading">
+        <div>
+          <span className="report-kicker">02 · 动作分析</span>
+          <h2 id="analysis-report-title">这一次，先改哪一处？</h2>
+        </div>
+        {analysis.score !== undefined ? (
+          <div className="score-display">
+            <strong>{analysis.score}</strong>
+            <span>动作技术完成度</span>
+          </div>
+        ) : null}
+      </div>
+
+      {analysis.priority ? (
+        <div className="priority-report">
+          <div className="priority-icon">
+            <Activity aria-hidden="true" size={20} />
+          </div>
+          <div>
+            <span>优先改进</span>
+            <strong>{analysis.priority.label}</strong>
+            <p>
+              当前检测 {Math.round(analysis.priority.value ?? 0)}°，建议范围 {analysis.priority.range[0]}°–
+              {analysis.priority.range[1]}°。{analysis.priority.hint}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="priority-report priority-report--quiet">
+          <div className="priority-icon">
+            <Check aria-hidden="true" size={20} />
+          </div>
+          <div>
+            <span>本次结果</span>
+            <strong>主要指标都在建议区间内</strong>
+            <p>保持当前动作节奏，再用下一次视频观察是否稳定。</p>
+          </div>
+        </div>
+      )}
+
+      <div className="report-meta">
+        <span>主侧：{analysis.primarySide === 'left' ? '左侧' : '右侧'}</span>
+        <span>
+          方向：{analysis.direction === 'left' ? '向左' : analysis.direction === 'right' ? '向右' : '未确定'}
+        </span>
+        <span>有效帧：{analysis.usableFrameCount}</span>
+        <span>规则：{analysis.ruleVersion}</span>
+      </div>
+
+      <div className="metric-grid">
+        {analysis.metrics.map((metric) => (
+          <MetricCard key={metric.id} metric={metric} />
+        ))}
+      </div>
+      <p className="analysis-note">{analysis.note}</p>
+    </section>
+  )
+}
+
 function App() {
   const { clearVideo, error, metadata, selectVideo, selectedVideo } = useVideoSelection()
   const { analyzeFrame, analyzeVideo, clearResult, reset: resetPose, state: poseState } = usePoseLandmarker()
@@ -144,6 +233,10 @@ function App() {
 
   const poseIsBusy = poseState.phase === 'loading' || poseState.phase === 'analyzing'
   const analysisProgress = poseState.analysis?.progress
+  const jumpAnalysis = useMemo(
+    () => (poseState.analysis?.completed ? analyzeJump(poseState.frames) : undefined),
+    [poseState.analysis?.completed, poseState.frames],
+  )
 
   return (
     <div className="app-shell">
@@ -279,6 +372,7 @@ function App() {
                     </div>
                   </div>
                 ) : null}
+                {jumpAnalysis ? <AnalysisReport analysis={jumpAnalysis} /> : null}
                 <div className="video-summary">
                   <div className="file-identity">
                     <FileVideo aria-hidden="true" size={21} />

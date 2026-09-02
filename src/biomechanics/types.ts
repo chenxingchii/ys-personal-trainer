@@ -18,6 +18,7 @@ export type MetricResult = {
   unit: '°'
   target: number
   range: [number, number]
+  tolerance: number
   status: MetricStatus
   confidence: number
   weight: number
