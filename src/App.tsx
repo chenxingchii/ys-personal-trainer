@@ -94,7 +94,7 @@ function VideoInput({ capture, icon: Icon, label, tone, onSelect }: VideoInputPr
 function EmptyStage() {
   return (
     <div className="empty-stage" aria-hidden="true">
-      <img src="/side-jump-guide.svg" alt="" />
+      <img src={`${import.meta.env.BASE_URL}side-jump-guide.svg`} alt="" />
       <div className="ground-line">
         <span>起跳区</span>
         <span>落地区</span>

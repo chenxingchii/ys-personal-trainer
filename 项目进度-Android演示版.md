@@ -182,13 +182,13 @@ GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_ed25519_ys_trainer -o IdentitiesOnly=yes" 
 
 ## 当前 Git 节点
 
-| Commit    | 内容                                               |
-| --------- | -------------------------------------------------- |
-| `c053a3e` | 主界面功能导航、历史报告页和两个 MVP 占位页        |
-| `90463aa` | 保留诊断报告、增加复测拍摄入口、改善相机选择器调用 |
-| `914764b` | 补齐 Android PWA 图标                              |
-| `ea63d3e` | 添加 PWA manifest、Service Worker 和局域网调试命令 |
-| `8eb8b6e` | 忽略 Vercel 本地配置与环境变量文件                  |
+| Commit    | 内容                                                  |
+| --------- | ----------------------------------------------------- |
+| `c053a3e` | 主界面功能导航、历史报告页和两个 MVP 占位页           |
+| `90463aa` | 保留诊断报告、增加复测拍摄入口、改善相机选择器调用    |
+| `914764b` | 补齐 Android PWA 图标                                 |
+| `ea63d3e` | 添加 PWA manifest、Service Worker 和局域网调试命令    |
+| `8eb8b6e` | 忽略 Vercel 本地配置与环境变量文件                    |
 | `18f5372` | 记录 GitHub SSH 推送与 Vercel 固定 HTTPS 部署完成状态 |
 
 - 最新本地 / 远程提交：`18f5372`（HEAD，已推送到 `origin/main`，`git status` 干净）。

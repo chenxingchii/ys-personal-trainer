@@ -1,12 +1,17 @@
 const CACHE_VERSION = 'ys-trainer-shell-v1'
+// 部署基准路径：Vercel 根路径部署时为 `/`；GitHub Pages 子路径部署时为 `/ys-personal-trainer/`。
+// 从 SW 作用域推导，保证缓存键与页面真实请求路径一致。
+const basePath = new URL(self.registration.scope).pathname
+const atBase = (file) => basePath + file
+
 const SHELL_CACHE = [
-  '/',
-  '/index.html',
-  '/manifest.webmanifest',
-  '/favicon.svg',
-  '/side-jump-guide.svg',
-  '/icons/icon-192.svg',
-  '/icons/icon-512.svg',
+  basePath,
+  atBase('index.html'),
+  atBase('manifest.webmanifest'),
+  atBase('favicon.svg'),
+  atBase('side-jump-guide.svg'),
+  atBase('icons/icon-192.svg'),
+  atBase('icons/icon-512.svg'),
 ]
 
 self.addEventListener('install', (event) => {

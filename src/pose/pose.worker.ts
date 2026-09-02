@@ -12,10 +12,12 @@ import type {
 } from './types'
 
 const workerScope = self as unknown as DedicatedWorkerGlobalScope
-const WASM_PATH = `${workerScope.location.origin}/wasm`
+// 部署基准路径（Vite 构建期内联）：Vercel 根路径为 `/`，GitHub Pages 为 `/ys-personal-trainer/`，始终以 `/` 结尾。
+const base = import.meta.env.BASE_URL
+const WASM_PATH = `${workerScope.location.origin}${base}wasm`
 const MODEL_PATHS: Record<PoseModelVariant, string> = {
-  full: `${workerScope.location.origin}/models/pose_landmarker_full-float16-v1.task`,
-  lite: `${workerScope.location.origin}/models/pose_landmarker_lite-float16-v1.task`,
+  full: `${workerScope.location.origin}${base}models/pose_landmarker_full-float16-v1.task`,
+  lite: `${workerScope.location.origin}${base}models/pose_landmarker_lite-float16-v1.task`,
 }
 
 let poseLandmarker: PoseLandmarker | null = null
