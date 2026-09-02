@@ -31,7 +31,11 @@ function copyLandmarks(landmarks: PoseLandmark[]): PoseLandmark[] {
   return landmarks.map(({ x, y, z, visibility, presence }) => ({ x, y, z, visibility, presence }))
 }
 
-async function createLandmarker(vision: VisionFileset, modelVariant: PoseModelVariant, delegate: PoseDelegate) {
+async function createLandmarker(
+  vision: VisionFileset,
+  modelVariant: PoseModelVariant,
+  delegate: PoseDelegate,
+) {
   const canvas =
     delegate === 'GPU' && typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(1, 1) : undefined
 
@@ -59,7 +63,7 @@ async function initialize(modelVariant: PoseModelVariant) {
   poseLandmarker = null
   activeModel = modelVariant
   send({ type: 'loading', stage: 'wasm' })
-  const vision = await FilesetResolver.forVisionTasks(WASM_PATH)
+  const vision = await FilesetResolver.forVisionTasks(WASM_PATH, true)
 
   let fallbackReason: string | undefined
 

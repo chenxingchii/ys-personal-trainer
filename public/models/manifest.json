@@ -22,6 +22,11 @@
   "runtime": {
     "package": "@mediapipe/tasks-vision",
     "version": "1.0.1",
-    "wasmDirectory": "/wasm"
+    "wasmDirectory": "/wasm",
+    "workerModule": {
+      "loader": "vision_wasm_module_internal.js",
+      "binary": "vision_wasm_module_internal.wasm",
+      "binarySha256": "2dabd8e23c60984628beb7bb338764c81a08e6837145273f59578684b5d53c1b"
+    }
   }
 }
