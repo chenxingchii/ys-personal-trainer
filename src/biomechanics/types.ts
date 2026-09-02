@@ -2,6 +2,8 @@ export type MetricStatus = 'excellent' | 'pass' | 'needs-improvement' | 'unavail
 
 export type MetricId =
   | 'pre-squat-knee'
+  | 'pre-push-shin'
+  | 'pre-push-hip'
   | 'takeoff-knee'
   | 'backward-arm'
   | 'forward-arm'
@@ -42,6 +44,10 @@ export type JumpSeriesPoint = {
   rightKnee?: number
   leftArm?: number
   rightArm?: number
+  leftShin?: number
+  rightShin?: number
+  leftHip?: number
+  rightHip?: number
 }
 
 export type JumpAnalysis = {

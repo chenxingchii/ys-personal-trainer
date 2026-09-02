@@ -1,4 +1,11 @@
-import { calculateAngle, calculateSignedArmAngle, pointOf, POSE_LANDMARKS, visibilityOf } from './angles'
+import {
+  calculateAngle,
+  calculateSignedArmAngle,
+  calculateVerticalAngle,
+  pointOf,
+  POSE_LANDMARKS,
+  visibilityOf,
+} from './angles'
 import type { PoseFrame } from '../pose/types'
 import { JUMP_RULES, JUMP_RULE_VERSION, type JumpRule } from '../rules/jumpRules'
 import type { JumpAnalysis, JumpPhaseFrames, JumpSeriesPoint, MetricId, MetricResult } from './types'
@@ -12,6 +19,10 @@ type FrameObservation = {
   rightKnee?: number
   leftArm?: number
   rightArm?: number
+  leftShin?: number
+  rightShin?: number
+  leftHip?: number
+  rightHip?: number
   leftQuality: number
   rightQuality: number
 }
@@ -82,6 +93,12 @@ function observe(frame: PoseFrame, direction: -1 | 1): FrameObservation {
       leftShoulder && leftElbow ? calculateSignedArmAngle(leftShoulder, leftElbow, direction) : undefined,
     rightArm:
       rightShoulder && rightElbow ? calculateSignedArmAngle(rightShoulder, rightElbow, direction) : undefined,
+    leftShin: leftKnee && leftAnkle ? calculateVerticalAngle(leftKnee, leftAnkle) : undefined,
+    rightShin: rightKnee && rightAnkle ? calculateVerticalAngle(rightKnee, rightAnkle) : undefined,
+    leftHip:
+      leftShoulder && leftHip && leftKnee ? calculateAngle(leftShoulder, leftHip, leftKnee) : undefined,
+    rightHip:
+      rightShoulder && rightHip && rightKnee ? calculateAngle(rightShoulder, rightHip, rightKnee) : undefined,
     leftQuality: sideQuality(frame, 'left'),
     rightQuality: sideQuality(frame, 'right'),
   }
@@ -228,6 +245,8 @@ export function analyzeJump(
   if (!primarySide) return undefined
   const knee = smooth(observations.map((item) => (primarySide === 'left' ? item.leftKnee : item.rightKnee)))
   const arm = smooth(observations.map((item) => (primarySide === 'left' ? item.leftArm : item.rightArm)))
+  const shin = smooth(observations.map((item) => (primarySide === 'left' ? item.leftShin : item.rightShin)))
+  const hip = smooth(observations.map((item) => (primarySide === 'left' ? item.leftHip : item.rightHip)))
   const phases = { ...buildPhases(observations, knee), ...phaseOverrides }
   const frameAt = (frameIndex: number | undefined) =>
     observations.findIndex((item) => item.frame.frameIndex === frameIndex)
@@ -236,6 +255,7 @@ export function analyzeJump(
   const apex = frameAt(phases.apex)
   const contact = frameAt(phases.landingContact)
   const lowest = frameAt(phases.landingLowest)
+  const prePush = takeoff >= 0 ? Math.max(pre, takeoff - 1) : pre
   const backwardIndex = bestIndex(arm, 0, Math.max(0, takeoff), 'min')
   const forwardIndex = bestIndex(arm, Math.max(0, backwardIndex ?? 0), Math.max(0, apex), 'max')
   const backward = backwardIndex === undefined ? undefined : arm[backwardIndex]
@@ -271,6 +291,8 @@ export function analyzeJump(
     )
   const results = [
     make('pre-squat-knee', pre < 0 ? undefined : knee[pre], pre),
+    make('pre-push-shin', prePush < 0 ? undefined : shin[prePush], prePush),
+    make('pre-push-hip', prePush < 0 ? undefined : hip[prePush], prePush),
     make('takeoff-knee', takeoff < 0 ? undefined : knee[takeoff], takeoff),
     make('backward-arm', backward, backwardIndex),
     make('forward-arm', forward, forwardIndex),
@@ -316,6 +338,10 @@ export function analyzeJump(
     rightKnee: item.rightKnee,
     leftArm: item.leftArm,
     rightArm: item.rightArm,
+    leftShin: item.leftShin,
+    rightShin: item.rightShin,
+    leftHip: item.leftHip,
+    rightHip: item.rightHip,
   }))
   return {
     ruleVersion: JUMP_RULE_VERSION,

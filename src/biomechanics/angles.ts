@@ -35,6 +35,12 @@ export function calculateSignedArmAngle(
   return (Math.atan2(vector.x, vector.y) * 180) / Math.PI
 }
 
+export function calculateVerticalAngle(top: Point, bottom: Point): number | undefined {
+  const vector = { x: top.x - bottom.x, y: top.y - bottom.y }
+  if (Math.hypot(vector.x, vector.y) < 1e-6) return undefined
+  return (Math.atan2(Math.abs(vector.x), Math.abs(vector.y)) * 180) / Math.PI
+}
+
 export function visibilityOf(landmark: PoseLandmark | undefined): number {
   if (!landmark) return 0
   return Math.max(0, Math.min(1, landmark.visibility ?? landmark.presence ?? 1))
