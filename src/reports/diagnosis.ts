@@ -1,4 +1,5 @@
 import type { JumpAnalysis, MetricResult } from '../biomechanics/types'
+import type { ChampionComparison } from './championModel'
 
 export type CoachReport = {
   hasPriority: boolean
@@ -9,12 +10,19 @@ export type CoachReport = {
   coachingCue: string
   drill: string
   confidenceNote: string
+  evidence?: string
+  trend?: string
 }
 
 export type ComparisonReport = {
   title: string
   detail: string
   action: string
+}
+
+export type DiagnosisContext = {
+  championComparison?: ChampionComparison
+  previousAnalysis?: JumpAnalysis
 }
 
 const coachLabels: Record<string, string> = {
@@ -31,8 +39,39 @@ function directionOf(metric: MetricResult, low: string, high: string) {
   return metric.value < metric.range[0] ? low : high
 }
 
-export function buildCoachReport(analysis: JumpAnalysis): CoachReport {
-  const metric = analysis.priority
+function findPreviousMetric(analysis: JumpAnalysis | undefined, id: MetricResult['id']) {
+  return analysis?.metrics.find((item) => item.id === id)
+}
+
+function severityFor(metric: MetricResult, championComparison?: ChampionComparison) {
+  const comparison = championComparison?.metrics.find((item) => item.id === metric.id)
+  if (comparison?.closeness === undefined || comparison.closeness >= 85) return '轻微'
+  if (comparison.closeness >= 65) return '中等'
+  return '明显'
+}
+
+function dynamicEvidence(metric: MetricResult, context: DiagnosisContext) {
+  const comparison = context.championComparison?.metrics.find((item) => item.id === metric.id)
+  if (!comparison || comparison.candidateValue === undefined) return undefined
+  const severity = severityFor(metric, context.championComparison)
+  const difference = Math.abs(comparison.difference ?? 0).toFixed(1)
+  return `本次${metric.label}为 ${comparison.candidateValue.toFixed(1)}°，冠军标准为 ${comparison.championValue.toFixed(1)}°，相差约 ${difference}°，属于${severity}差异。`
+}
+
+function dynamicTrend(metric: MetricResult, context: DiagnosisContext) {
+  const previous = findPreviousMetric(context.previousAnalysis, metric.id)
+  const comparison = context.championComparison?.metrics.find((item) => item.id === metric.id)
+  if (!previous || previous.value === undefined || !comparison || comparison.candidateValue === undefined)
+    return undefined
+  const currentGap = Math.abs(comparison.candidateValue - comparison.championValue)
+  const previousGap = Math.abs(previous.value - comparison.championValue)
+  if (currentGap <= previousGap - 2) return '相比上一次更接近冠军标准，当前方向是对的。'
+  if (currentGap >= previousGap + 2) return '相比上一次差异有所扩大，建议先降低动作速度，重新找回稳定节奏。'
+  return '与上一次相比变化不大，下一次重点观察动作能否稳定复现。'
+}
+
+export function buildCoachReport(analysis: JumpAnalysis, context: DiagnosisContext = {}): CoachReport {
+  const metric = context.championComparison?.priority ?? analysis.priority
   if (!metric) {
     return {
       hasPriority: false,
@@ -43,6 +82,7 @@ export function buildCoachReport(analysis: JumpAnalysis): CoachReport {
       coachingCue: '准备、蹬地、摆臂和落地一气呵成，动作不要抢拍。',
       drill: '做 2 组连续纵跳，每组 8 次，重点保持落地安静、身体稳定。',
       confidenceNote: '本报告基于侧面视频估计，仅作为训练参考。',
+      evidence: '当前没有发现需要优先处理的明显差异。',
     }
   }
 
@@ -104,7 +144,17 @@ export function buildCoachReport(analysis: JumpAnalysis): CoachReport {
     drill: '做 2 组技术动作练习，每组 6 次，优先保证动作质量。',
     confidenceNote: '本报告基于侧面视频估计，仅作为训练参考。',
   }
-  return { ...copy, hasPriority: true, priority: coachLabels[metric.id] ?? '动作节奏稳定性' }
+  const evidence = dynamicEvidence(metric, context)
+  const trend = dynamicTrend(metric, context)
+  return {
+    ...copy,
+    hasPriority: true,
+    priority: coachLabels[metric.id] ?? '动作节奏稳定性',
+    observation: evidence ? `${copy.observation} ${evidence}` : copy.observation,
+    coachingCue: trend ? `${copy.coachingCue} ${trend}` : copy.coachingCue,
+    evidence,
+    trend,
+  }
 }
 
 export function compareCoachReports(previous: CoachReport, current: CoachReport): ComparisonReport {

@@ -946,6 +946,29 @@ h1 {
   line-height: 1.5;
 }
 
+.report-evidence {
+  display: grid;
+  gap: 4px;
+  margin-top: 16px;
+  padding: 11px 13px;
+  color: var(--quiet);
+  background: #f4f6f1;
+  border-left: 3px solid var(--track);
+}
+
+.report-evidence span {
+  color: var(--track-dark);
+  font-family: var(--font-utility);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.report-evidence p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 .quality-warning,
 .retest-prompt,
 .comparison-report,

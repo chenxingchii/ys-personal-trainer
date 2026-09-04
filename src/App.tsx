@@ -23,6 +23,7 @@ import { formatBytes, formatDuration } from './capture/video'
 import { checkAnalysisQuality, checkVideoMetadata, type VideoQualityResult } from './capture/quality'
 import { PoseOverlay } from './pose/PoseOverlay'
 import type { PoseEngineState } from './pose/types'
+import type { JumpAnalysis } from './biomechanics/types'
 import { usePoseLandmarker } from './pose/usePoseLandmarker'
 import { analyzeJump } from './biomechanics/jumpAnalysis'
 import {
@@ -210,6 +211,13 @@ function AnalysisReport({
           <p>{report.drill}</p>
         </div>
       </div>
+      {report.evidence || report.trend ? (
+        <div className="report-evidence">
+          <span>本次判断依据</span>
+          {report.evidence ? <p>{report.evidence}</p> : null}
+          {report.trend ? <p>{report.trend}</p> : null}
+        </div>
+      ) : null}
       <p className="analysis-note">{report.confidenceNote}</p>
       {championComparison ? (
         <div className="champion-comparison" aria-label="冠军动作对比">
@@ -432,6 +440,7 @@ function App() {
   const [qualityCheck, setQualityCheck] = useState<VideoQualityResult | null>(null)
   const [isRetest, setIsRetest] = useState(false)
   const [backendChampionComparison, setBackendChampionComparison] = useState<ChampionComparison | null>(null)
+  const [previousAnalysisForReport, setPreviousAnalysisForReport] = useState<JumpAnalysis | undefined>()
   const [trainingConsent, setTrainingConsent] = useState(false)
   const [trainingUploadStatus, setTrainingUploadStatus] = useState<
     'idle' | 'uploading' | 'saved' | 'unavailable'
@@ -535,9 +544,13 @@ function App() {
             championComparison?.priority
               ? { ...jumpAnalysis, priority: championComparison.priority }
               : jumpAnalysis,
+            {
+              championComparison,
+              previousAnalysis: previousAnalysisForReport,
+            },
           )
         : undefined,
-    [analysisQuality, championComparison, jumpAnalysis],
+    [analysisQuality, championComparison, jumpAnalysis, previousAnalysisForReport],
   )
   const previousReport = comparisonBaseRef.current ?? localReports[0]?.coachReport
   const comparison = useMemo(
@@ -623,19 +636,21 @@ function App() {
   const handleRetestSelect = useCallback(
     (file: File | null) => {
       comparisonBaseRef.current = coachReport ?? localReports[0]?.coachReport ?? null
+      setPreviousAnalysisForReport(jumpAnalysis ?? localReports[0]?.analysis)
       setIsRetest(true)
       setShowReport(false)
       selectVideo(file)
     },
-    [coachReport, localReports, selectVideo],
+    [coachReport, jumpAnalysis, localReports, selectVideo],
   )
 
   const handleReplaceVideo = useCallback(
     (file: File | null) => {
+      setPreviousAnalysisForReport(localReports[0]?.analysis)
       setShowReport(false)
       selectVideo(file)
     },
-    [selectVideo],
+    [localReports, selectVideo],
   )
 
   const handleOpenHistoryReport = useCallback((report: LocalReport) => {
