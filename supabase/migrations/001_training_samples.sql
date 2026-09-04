@@ -15,6 +15,10 @@ create table if not exists public.training_samples (
     check (annotation_status in ('unreviewed', 'reviewed', 'excluded'))
 );
 
+-- 兼容已执行早期版本迁移的环境。
+alter table public.training_samples
+  add column if not exists athlete_id_hash text;
+
 create index if not exists training_samples_created_at_idx
   on public.training_samples (created_at desc);
 
