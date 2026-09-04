@@ -1,4 +1,4 @@
-import championModelData from './championModelData'
+import championModelData from './championModelData.js'
 import { compareAnalysisToChampion, type ChampionModel } from '../src/reports/championModel'
 import type { JumpAnalysis } from '../src/biomechanics/types'
 
