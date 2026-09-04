@@ -1,0 +1,20 @@
+{
+  "framework": "vite",
+  "buildCommand": "pnpm build",
+  "outputDirectory": "dist",
+  "functions": {
+    "api/diagnose.ts": {
+      "runtime": "nodejs20.x",
+      "includeFiles": ["public/models/champion-v1.json"]
+    },
+    "api/training-samples.ts": {
+      "runtime": "nodejs20.x"
+    },
+    "api/label-sample.ts": {
+      "runtime": "nodejs20.x"
+    },
+    "api/training-dataset.ts": {
+      "runtime": "nodejs20.x"
+    }
+  }
+}
