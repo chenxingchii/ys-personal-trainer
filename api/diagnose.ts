@@ -1,4 +1,3 @@
-import { createRequire } from 'node:module'
 import { compareAnalysisToChampion, type ChampionModel } from '../src/reports/championModel'
 import type { JumpAnalysis } from '../src/biomechanics/types'
 
@@ -12,7 +11,7 @@ type Response = {
   json: (body: unknown) => void
 }
 
-const championModelData = createRequire(import.meta.url)('../public/models/champion-v1.json')
+const championModelData = require('../public/models/champion-v1.json')
 const championModel = championModelData as unknown as ChampionModel
 
 function isJumpAnalysis(value: unknown): value is JumpAnalysis {
