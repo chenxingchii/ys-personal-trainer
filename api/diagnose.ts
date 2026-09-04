@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { compareAnalysisToChampion, type ChampionModel } from '../src/reports/championModel'
 import type { JumpAnalysis } from '../src/biomechanics/types'
 
@@ -11,7 +13,9 @@ type Response = {
   json: (body: unknown) => void
 }
 
-const championModelData = require('../public/models/champion-v1.json')
+const championModelData = JSON.parse(
+  readFileSync(join(process.cwd(), 'public', 'models', 'champion-v1.json'), 'utf8'),
+)
 const championModel = championModelData as unknown as ChampionModel
 
 function isJumpAnalysis(value: unknown): value is JumpAnalysis {
