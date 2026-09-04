@@ -1,5 +1,5 @@
 import championModelData from './championModelData.js'
-import { compareAnalysisToChampion, type ChampionModel } from '../src/reports/championModel.js'
+import type { ChampionModel } from '../src/reports/championModel.js'
 import type { JumpAnalysis } from '../src/biomechanics/types'
 
 type Request = {
@@ -13,6 +13,7 @@ type Response = {
 }
 
 const championModel = championModelData as unknown as ChampionModel
+const championModulePromise = import('../src/reports/championModel.js')
 
 function isJumpAnalysis(value: unknown): value is JumpAnalysis {
   if (!value || typeof value !== 'object') return false
@@ -25,12 +26,13 @@ function isJumpAnalysis(value: unknown): value is JumpAnalysis {
   )
 }
 
-export default function handler(request: Request, response: Response) {
+export default async function handler(request: Request, response: Response) {
   if (request.method !== 'POST') {
     return response.status(405).json({ error: '仅支持 POST 请求。' })
   }
   if (!isJumpAnalysis(request.body)) {
     return response.status(400).json({ error: '动作分析数据格式不正确。' })
   }
+  const { compareAnalysisToChampion } = await championModulePromise
   return response.status(200).json(compareAnalysisToChampion(request.body, championModel))
 }
