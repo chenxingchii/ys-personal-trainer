@@ -3,7 +3,7 @@ type: project-status
 status: active
 para: inbox
 created: 2026-09-02
-updated: 2026-09-03
+updated: 2026-09-05
 deploy: https://ys-personal-trainer.vercel.app
 deploy_pages: https://chenxingchii.github.io/ys-personal-trainer
 remote: https://github.com/chenxingchii/ys-personal-trainer
@@ -21,15 +21,16 @@ tags: [YS专属训练师, 项目进度, Android, PWA, MVP]
 ### 📌 现在进行到哪一步
 
 - ✅ GitHub：完整项目已推送，`origin/main` 使用 SSH 专属密钥，本地与远程同步。
-- ✅ Vercel：生产部署 READY，主地址 https://ys-personal-trainer.vercel.app。
+- ✅ Vercel：已连接 GitHub 仓库，推送 `main` 会自动部署；主地址 https://ys-personal-trainer.vercel.app。
 - ✅ GitHub Pages：仓库已改为公开，`deploy-pages.yml` 构建+发布全绿，备用地址 https://chenxingchii.github.io/ys-personal-trainer/ 已上线（2026-09-03 用户确认可访问）。
 - ✅ base 自适应：同一份源码支持根路径（Vercel）与 `/ys-personal-trainer/` 子路径（Pages）两种构建，本地两套构建均验证通过。
 - ⏭️ **下一步：Android 真机验收**（见「Android 手机演示验收步骤」），这是当前唯一未完成的核心任务。
 - ✅ **冠军标准 v1：** 已将桌面冠军视频预处理为 `public/models/champion-v1.json`，Vercel 通过 `/api/diagnose` 使用该标准，用户上传视频后自动比较；无 API 的本地 / Pages 环境自动使用同一比较逻辑回退。
-- ⚠️ 待办（可选）：Vercel 网页端 `Settings → Git` 连接 GitHub，实现「push 即自动部署」。
+- ✅ Supabase：已执行 `training_samples` 表迁移，并在 Vercel 配置 `SUPABASE_URL`、`SUPABASE_SERVICE_ROLE_KEY`、`ADMIN_TOKEN`。
+- ✅ API 线上验证：`/api/diagnose` 可返回冠军比较结果；训练样本、标注和数据集接口的鉴权响应正常。
 - ⚠️ 网络提示：主地址 `*.vercel.app` 中国大陆直连可能不稳定；**备用地址 `*.github.io` 裸连可访问，演示优先用它**。
 
-> 若你是新接手此项目的 Agent：先读本文件，再用 `git log --oneline` 与 `git status` 确认最新提交与工作区状态，然后先确认「网页端待办」的 Pages 状态，再进入 Android 真机验收。
+> 若你是新接手此项目的 Agent：先读本文件，再用 `git log --oneline` 与 `git status` 确认最新提交与工作区状态；优先进行真实视频采集、教练审核和数据集质量检查，不要直接替换 `champion-v1`。
 
 ## 远程仓库与部署状态
 
@@ -81,9 +82,9 @@ git remote set-url origin git@github.com:chenxingchii/ys-personal-trainer.git
 GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_ed25519_ys_trainer -o IdentitiesOnly=yes" git push -u origin main
 ```
 
-### Vercel 部署配置（CLI 方式）
+### Vercel 部署配置（Git 自动部署）
 
-已通过 Vercel CLI 完成部署，配置与网页导入等价：
+当前项目已在 Vercel 网页端连接 GitHub 仓库 `chenxingchii/ys-personal-trainer`。推送 `main` 后自动创建生产部署；项目构建配置为：
 
 ```text
 安装命令：pnpm install --frozen-lockfile
@@ -93,7 +94,7 @@ GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_ed25519_ys_trainer -o IdentitiesOnly=yes" 
 框架预设：Vite（CLI 自动检测）
 ```
 
-常用命令：
+常用命令（CLI 仅用于故障排查，当前本机未登录 Vercel CLI）：
 
 ```bash
 # 登录（设备码授权，需在浏览器确认）
@@ -141,13 +142,39 @@ git commit -m "描述本次改动"
 GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_ed25519_ys_trainer -o IdentitiesOnly=yes" git push origin main
 ```
 
-> ⚠️ **注意：Vercel 尚未连接 GitHub 自动部署。** `vercel link` 时连接 GitHub 仓库失败，所以 `git push` **不会**自动触发重新部署。要让最新代码上线，需在项目目录手动执行：
->
-> ```bash
-> vercel deploy --prod --yes
-> ```
->
-> 若希望「push 即自动部署」，先在 Vercel 网页 `Settings → Git` 连接本仓库并授权；连接成功后此提示可删除。
+> 生产环境变量已经配置在 Vercel，不要提交到仓库。GitHub Pages 仍只提供静态页面和本地诊断回退，训练样本保存必须使用 Vercel 地址。
+
+### 下次工作摘要
+
+#### 教练后台审核
+
+访问 `https://ys-personal-trainer.vercel.app/?admin=1`，输入 `ADMIN_TOKEN`，点击“加载样本”。逐条检查样本质量、整体等级、技术问题和教练备注，然后选择“保存审核结果”或“排除样本”。
+
+主训练集只接受：`annotation_status=reviewed`、分析质量 `>= 0.55`、教练质量标记为 `usable` 的样本。教练无法确认问题时选择“需要复核”，不要强行标注。
+
+#### 样本保留标准
+
+- 保留：侧面固定机位、单人全身入镜、准备到落地完整、光线稳定、无剪辑的视频。
+- 优先收集：优秀动作、达标动作、轻微问题、明显问题、改进前后对照，以及不同身材和左右方向样本。
+- 排除：时长不足 1 秒、分辨率低于 480×360、可识别帧少于 3、关键阶段缺失、严重遮挡/抖动/模糊、多人与剪辑拼接。
+- 当前后台不保存原始视频；无法仅凭姿态特征确认的问题不能标记为 `usable`。
+
+#### 神经网络训练路线
+
+1. 先用 10～20 段真实视频校准规则和教练标签。
+2. 在后台审核样本并点击“导出训练集”，得到 `training-dataset-v1.jsonl`。
+3. 按 `athlete_id_hash` 按运动员划分训练集、验证集和测试集，避免同一运动员泄漏到不同集合。
+4. 使用 Python/PyTorch 训练姿态时序模型，输出技术问题概率和整体等级。
+5. 用独立测试集、混淆矩阵、F1、误报率和教练人工抽查评估。
+6. 导出 ONNX，注册为 `pose-model-v0.1`，灰度验证后再上线；保留 `champion-v1` 作为可解释基准和回退方案。
+
+#### 下一次优先任务
+
+1. 用真实用户视频验证授权上传和 Supabase 入库。
+2. 教练审核第一批样本，检查标签一致性。
+3. 增加数据集清单和运动员级别划分检查。
+4. 编写第一版 PyTorch 训练脚本和固定测试集。
+5. 完成 Android 真机验收后，再决定 Capacitor APK/AAB 封装。
 
 ### Android 手机演示验收步骤
 
@@ -203,6 +230,11 @@ GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_ed25519_ys_trainer -o IdentitiesOnly=yes" 
 
 | Commit    | 内容                                                   |
 | --------- | ------------------------------------------------------ |
+| `feb1d64` | 修复 Vercel CommonJS/ESM 兼容，诊断 API 线上返回正常   |
+| `50c2bd0` | 明确诊断逻辑运行时模块路径                             |
+| `84eaf36` | 将冠军标准内置到诊断函数                               |
+| `6c44f6d` | 统一 Vercel API 模块运行方式                           |
+| `e8b583a` | 恢复 Vercel 自动识别 API 路由                          |
 | `c053a3e` | 主界面功能导航、历史报告页和两个 MVP 占位页            |
 | `90463aa` | 保留诊断报告、增加复测拍摄入口、改善相机选择器调用     |
 | `914764b` | 补齐 Android PWA 图标                                  |
@@ -214,8 +246,8 @@ GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_ed25519_ys_trainer -o IdentitiesOnly=yes" 
 | `7bc1211` | 进度文档：同步 HEAD 记录                               |
 | `20636bc` | 进度文档：记录 Vercel 生产重新部署（main 最新提交）    |
 
-- 最新提交以 `git log --oneline` 为准（均已推送到 `origin/main`），`git status` 干净。
-- Vercel 生产部署：首次来自 `8eb8b6e`（CLI 首部署）；后已执行 `vercel deploy --prod --yes`，以 `main` 最新提交（含 base 自适应）重新部署，固定地址现指向该新部署。Pages 工作流随 push 到 `main` 自动构建。
+- 最新提交以 `git log --oneline` 为准；当前 `main` 与 `origin/main` 同步，`git status` 干净。
+- Vercel 生产部署：已通过 GitHub 连接自动部署，最新代码推送后自动构建；生产 API 已完成线上验收。Pages 工作流随 push 到 `main` 自动构建。
 
 工作区要求：每次代码或文档改动完成后必须创建对应 Git commit；不要把多个无关功能混在一个 commit 中。
 
@@ -225,11 +257,10 @@ GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_ed25519_ys_trainer -o IdentitiesOnly=yes" 
 
 - 当前生效标准：`champion-v1`，来源为 `微信视频2026-09-04_214928_425.mp4`（HEVC 原片已转为 H.264 后完成 MediaPipe 预处理）。
 - 后台比较接口：`/api/diagnose`。接口接收用户动作分析 JSON，不接收原始视频，返回冠军接近度、优先差异和报告所需字段。
-- 当前仅完成比较接口，尚未接入持久化数据库和用户数据采集；后续必须先取得用户授权，再保存匿名姿态特征和教练标签。
-- 已增加用户授权勾选和 `/api/training-samples` 保存接口；接口使用 Supabase REST 写入 `training_samples`，未配置 `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` 时自动停用，不影响本地诊断。
+- 已完成用户授权勾选和 `/api/training-samples` 保存接口；接口使用 Supabase REST 写入 `training_samples`，线上环境变量已配置，仍只在用户授权后保存匿名特征。
 - Supabase 初始表结构位于 `supabase/migrations/001_training_samples.sql`，当前只保存匿名动作特征，不保存原始视频。
 - 已增加内部审核页：部署后访问 `/?admin=1`，使用 `ADMIN_TOKEN` 加载样本、保存教练标签，并从 `/api/training-dataset` 导出已审核 JSONL；`format=manifest` 可获取数据集清单。
-- 当标注样本达到训练门槛后，再训练姿态时序模型，并通过独立测试集和人工抽查后替换生产标准。
+- 当前尚未训练神经网络；当标注样本达到训练门槛后，再训练姿态时序模型，并通过独立测试集和人工抽查后候选上线，保留 `champion-v1` 回退。
 
 ### 1. 固定 Android 演示地址 ✅ 已完成（含备用地址）
 
