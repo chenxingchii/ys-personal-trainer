@@ -1,4 +1,4 @@
-import championModelData from '../public/models/champion-v1.json'
+import championModelData from '../public/models/champion-v1.json' with { type: 'json' }
 import { compareAnalysisToChampion, type ChampionModel } from '../src/reports/championModel'
 import type { JumpAnalysis } from '../src/biomechanics/types'
 
