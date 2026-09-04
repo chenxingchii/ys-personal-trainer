@@ -1,5 +1,6 @@
 import type { JumpAnalysis } from '../biomechanics/types'
 import type { CoachReport } from './diagnosis'
+import type { ChampionComparison } from './championModel'
 
 const STORAGE_KEY = 'ys-personal-trainer.reports.v1'
 
@@ -10,6 +11,7 @@ export type LocalReport = {
   videoSize: number
   analysis: JumpAnalysis
   coachReport: CoachReport
+  championComparison?: ChampionComparison
 }
 
 function readReports(): LocalReport[] {

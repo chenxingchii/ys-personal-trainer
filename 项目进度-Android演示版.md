@@ -25,6 +25,7 @@ tags: [YS专属训练师, 项目进度, Android, PWA, MVP]
 - ✅ GitHub Pages：仓库已改为公开，`deploy-pages.yml` 构建+发布全绿，备用地址 https://chenxingchii.github.io/ys-personal-trainer/ 已上线（2026-09-03 用户确认可访问）。
 - ✅ base 自适应：同一份源码支持根路径（Vercel）与 `/ys-personal-trainer/` 子路径（Pages）两种构建，本地两套构建均验证通过。
 - ⏭️ **下一步：Android 真机验收**（见「Android 手机演示验收步骤」），这是当前唯一未完成的核心任务。
+- ✅ **冠军标准 v1：** 已将桌面冠军视频预处理为 `public/models/champion-v1.json`，Vercel 通过 `/api/diagnose` 使用该标准，用户上传视频后自动比较；无 API 的本地 / Pages 环境自动使用同一比较逻辑回退。
 - ⚠️ 待办（可选）：Vercel 网页端 `Settings → Git` 连接 GitHub，实现「push 即自动部署」。
 - ⚠️ 网络提示：主地址 `*.vercel.app` 中国大陆直连可能不稳定；**备用地址 `*.github.io` 裸连可访问，演示优先用它**。
 
@@ -195,6 +196,7 @@ GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_ed25519_ys_trainer -o IdentitiesOnly=yes" 
 - 训练计划和动作切换是 MVP 占位入口，不具备配置和训练功能。
 - 诊断规则仍需要真实训练视频和教练人工标注校准。
 - 报告由本地规则引擎生成；在线大模型只作为未来可选的语言润色层，不参与核心动作判断。
+- 冠军标准 v1 来自单段冠军视频，当前是可解释的动作指标模板，不是训练好的神经网络权重；神经网络训练需要后续积累匿名姿态特征和教练标签。
 - 中国大陆网络直连 `*.vercel.app` 可能不稳定；演示 / 访问建议用裸连可达的 GitHub Pages 备用地址。
 
 ## 当前 Git 节点
@@ -218,6 +220,13 @@ GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_ed25519_ys_trainer -o IdentitiesOnly=yes" 
 工作区要求：每次代码或文档改动完成后必须创建对应 Git commit；不要把多个无关功能混在一个 commit 中。
 
 ## 下一步执行顺序
+
+### 0. 冠军标准与数据闭环
+
+- 当前生效标准：`champion-v1`，来源为 `微信视频2026-09-04_214928_425.mp4`（HEVC 原片已转为 H.264 后完成 MediaPipe 预处理）。
+- 后台比较接口：`/api/diagnose`。接口接收用户动作分析 JSON，不接收原始视频，返回冠军接近度、优先差异和报告所需字段。
+- 当前仅完成比较接口，尚未接入持久化数据库和用户数据采集；后续必须先取得用户授权，再保存匿名姿态特征和教练标签。
+- 当标注样本达到训练门槛后，再训练姿态时序模型，并通过独立测试集和人工抽查后替换生产标准。
 
 ### 1. 固定 Android 演示地址 ✅ 已完成（含备用地址）
 

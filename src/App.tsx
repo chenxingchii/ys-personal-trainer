@@ -32,6 +32,14 @@ import {
   type ComparisonReport,
 } from './reports/diagnosis'
 import { listLocalReports, saveLocalReport, type LocalReport } from './reports/localReports'
+import championModelData from './reports/champion-v1.json'
+import {
+  compareAnalysisToChampion,
+  type ChampionComparison,
+  type ChampionModel,
+} from './reports/championModel'
+
+const championModel = championModelData as unknown as ChampionModel
 
 type VideoInputProps = {
   capture?: 'environment'
@@ -143,7 +151,15 @@ function PoseStatus({ state }: { state: PoseEngineState }) {
   return <span>暂停到身体完整可见的一帧</span>
 }
 
-function AnalysisReport({ report, comparison }: { report: CoachReport; comparison?: ComparisonReport }) {
+function AnalysisReport({
+  report,
+  comparison,
+  championComparison,
+}: {
+  report: CoachReport
+  comparison?: ComparisonReport
+  championComparison?: ChampionComparison
+}) {
   return (
     <section className="analysis-report" aria-labelledby="analysis-report-title">
       <div className="report-heading">
@@ -195,6 +211,16 @@ function AnalysisReport({ report, comparison }: { report: CoachReport; compariso
         </div>
       </div>
       <p className="analysis-note">{report.confidenceNote}</p>
+      {championComparison ? (
+        <div className="champion-comparison" aria-label="冠军动作对比">
+          <div className="champion-comparison__heading">
+            <span>冠军标准 · {championComparison.modelId}</span>
+            <strong>{championComparison.closeness}% 接近度</strong>
+          </div>
+          <strong>{championComparison.title}</strong>
+          <p>{championComparison.summary}</p>
+        </div>
+      ) : null}
       {comparison ? (
         <div className="comparison-report">
           <span>复测对比</span>
@@ -335,7 +361,10 @@ function HistoryView({
             <strong>{selectedReport.videoName}</strong>
             <span>{new Date(selectedReport.createdAt).toLocaleString('zh-CN')}</span>
           </div>
-          <AnalysisReport report={selectedReport.coachReport} />
+          <AnalysisReport
+            report={selectedReport.coachReport}
+            championComparison={selectedReport.championComparison}
+          />
         </div>
       ) : null}
       {!selectedReport && reports.length ? (
@@ -402,10 +431,12 @@ function App() {
   const savedReportVideoRef = useRef<string | null>(null)
   const [qualityCheck, setQualityCheck] = useState<VideoQualityResult | null>(null)
   const [isRetest, setIsRetest] = useState(false)
+  const [backendChampionComparison, setBackendChampionComparison] = useState<ChampionComparison | null>(null)
   const comparisonBaseRef = useRef<CoachReport | null>(null)
   const [reportSnapshot, setReportSnapshot] = useState<{
     report: CoachReport
     comparison?: ComparisonReport
+    championComparison?: ChampionComparison
   } | null>(null)
   const [showReport, setShowReport] = useState(false)
   const [activeView, setActiveView] = useState<AppView>('home')
@@ -463,12 +494,45 @@ function App() {
     () => (jumpAnalysis ? checkAnalysisQuality(jumpAnalysis, metadata.value) : null),
     [jumpAnalysis, metadata.value],
   )
+  const localChampionComparison = useMemo(
+    () =>
+      jumpAnalysis && (!analysisQuality || analysisQuality.passed)
+        ? compareAnalysisToChampion(jumpAnalysis, championModel)
+        : undefined,
+    [analysisQuality, jumpAnalysis],
+  )
+  useEffect(() => {
+    setBackendChampionComparison(null)
+    if (!jumpAnalysis || (analysisQuality && !analysisQuality.passed)) return
+    let active = true
+    void fetch('/api/diagnose', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(jumpAnalysis),
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('后台冠军比较暂不可用。')
+        return (await response.json()) as ChampionComparison
+      })
+      .then((comparison) => {
+        if (active) setBackendChampionComparison(comparison)
+      })
+      .catch(() => undefined)
+    return () => {
+      active = false
+    }
+  }, [analysisQuality, jumpAnalysis])
+  const championComparison = backendChampionComparison ?? localChampionComparison
   const coachReport = useMemo(
     () =>
       jumpAnalysis && (!analysisQuality || analysisQuality.passed)
-        ? buildCoachReport(jumpAnalysis)
+        ? buildCoachReport(
+            championComparison?.priority
+              ? { ...jumpAnalysis, priority: championComparison.priority }
+              : jumpAnalysis,
+          )
         : undefined,
-    [analysisQuality, jumpAnalysis],
+    [analysisQuality, championComparison, jumpAnalysis],
   )
   const previousReport = comparisonBaseRef.current ?? localReports[0]?.coachReport
   const comparison = useMemo(
@@ -487,18 +551,19 @@ function App() {
       videoSize: selectedVideo.file.size,
       analysis: jumpAnalysis,
       coachReport,
+      championComparison,
     })
     if (saved) {
       savedReportVideoRef.current = selectedVideo.url
       setLocalReports(listLocalReports())
     }
-  }, [coachReport, jumpAnalysis, selectedVideo])
+  }, [championComparison, coachReport, jumpAnalysis, selectedVideo])
 
   useEffect(() => {
     if (!coachReport) return
-    setReportSnapshot({ report: coachReport, comparison })
+    setReportSnapshot({ report: coachReport, comparison, championComparison })
     setShowReport(true)
-  }, [coachReport, comparison])
+  }, [championComparison, coachReport, comparison])
 
   const qualityMessage =
     qualityCheck && !qualityCheck.passed
@@ -718,7 +783,11 @@ function App() {
                       </button>
                     ) : null}
                     {reportSnapshot && showReport ? (
-                      <AnalysisReport report={reportSnapshot.report} comparison={reportSnapshot.comparison} />
+                      <AnalysisReport
+                        report={reportSnapshot.report}
+                        comparison={reportSnapshot.comparison}
+                        championComparison={reportSnapshot.championComparison}
+                      />
                     ) : null}
                     {reportSnapshot && showReport ? <LocalHistory reports={localReports} /> : null}
                     {reportSnapshot ? (

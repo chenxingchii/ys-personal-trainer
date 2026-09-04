@@ -948,7 +948,8 @@ h1 {
 
 .quality-warning,
 .retest-prompt,
-.comparison-report {
+.comparison-report,
+.champion-comparison {
   display: grid;
   gap: 5px;
   padding: 14px 18px;
@@ -958,6 +959,41 @@ h1 {
 .quality-warning {
   color: var(--track-dark);
   background: #fff3ef;
+}
+
+.champion-comparison {
+  margin-top: 16px;
+  color: var(--ink);
+  background: #edf4f2;
+  border: 1px solid #c7ddd5;
+  border-radius: 6px;
+}
+
+.champion-comparison__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.champion-comparison__heading span {
+  color: var(--track-dark);
+  font-family: var(--font-utility);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.champion-comparison__heading strong {
+  color: var(--field);
+  font-family: var(--font-utility);
+  font-size: 14px;
+}
+
+.champion-comparison p {
+  margin: 6px 0 0;
+  color: var(--quiet);
+  font-size: 11px;
+  line-height: 1.5;
 }
 
 .quality-warning strong,
