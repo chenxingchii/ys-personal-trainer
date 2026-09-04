@@ -432,6 +432,11 @@ function App() {
   const [qualityCheck, setQualityCheck] = useState<VideoQualityResult | null>(null)
   const [isRetest, setIsRetest] = useState(false)
   const [backendChampionComparison, setBackendChampionComparison] = useState<ChampionComparison | null>(null)
+  const [trainingConsent, setTrainingConsent] = useState(false)
+  const [trainingUploadStatus, setTrainingUploadStatus] = useState<
+    'idle' | 'uploading' | 'saved' | 'unavailable'
+  >('idle')
+  const trainingUploadVideoRef = useRef<string | null>(null)
   const comparisonBaseRef = useRef<CoachReport | null>(null)
   const [reportSnapshot, setReportSnapshot] = useState<{
     report: CoachReport
@@ -564,6 +569,43 @@ function App() {
     setReportSnapshot({ report: coachReport, comparison, championComparison })
     setShowReport(true)
   }, [championComparison, coachReport, comparison])
+
+  useEffect(() => {
+    trainingUploadVideoRef.current = null
+    setTrainingUploadStatus('idle')
+  }, [selectedVideo?.url])
+
+  useEffect(() => {
+    if (
+      !trainingConsent ||
+      !selectedVideo ||
+      !jumpAnalysis ||
+      !coachReport ||
+      trainingUploadVideoRef.current === selectedVideo.url
+    )
+      return
+    trainingUploadVideoRef.current = selectedVideo.url
+    setTrainingUploadStatus('uploading')
+    void fetch('/api/training-samples', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        consent: true,
+        consentVersion: 'training-data-v1',
+        analysis: jumpAnalysis,
+        championComparison,
+        metadata: metadata.value,
+      }),
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error('后台训练数据采集尚未配置。')
+        setTrainingUploadStatus('saved')
+      })
+      .catch(() => {
+        trainingUploadVideoRef.current = null
+        setTrainingUploadStatus('unavailable')
+      })
+  }, [championComparison, coachReport, jumpAnalysis, metadata.value, selectedVideo, trainingConsent])
 
   const qualityMessage =
     qualityCheck && !qualityCheck.passed
@@ -769,6 +811,24 @@ function App() {
                         <strong>暂时不能生成可靠诊断</strong>
                         <span>{qualityMessage}</span>
                         {qualityAdvice ? <span>{qualityAdvice}</span> : null}
+                      </div>
+                    ) : null}
+                    {reportSnapshot ? (
+                      <div className="training-consent">
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={trainingConsent}
+                            onChange={(event) => setTrainingConsent(event.target.checked)}
+                          />
+                          <span>允许上传匿名动作特征，用于改进冠军比较模型</span>
+                        </label>
+                        <small>
+                          只上传姿态关键点和动作指标，不上传原始视频。
+                          {trainingUploadStatus === 'uploading' ? '正在保存…' : null}
+                          {trainingUploadStatus === 'saved' ? '已保存。' : null}
+                          {trainingUploadStatus === 'unavailable' ? '后台尚未配置，当前不会上传。' : null}
+                        </small>
                       </div>
                     ) : null}
                     {reportSnapshot ? (

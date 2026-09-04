@@ -13,6 +13,8 @@
 
 当前已内置 `champion-v1` 冠军动作标准：由项目维护者预处理冠军示范视频生成，Vercel 部署通过 `/api/diagnose` 自动完成用户动作与冠军标准的比较。用户不需要导入模型；本地或 GitHub Pages 在接口不可用时使用同一套比较逻辑回退。该标准是单段视频的动作模板，不等同于训练好的神经网络模型。
 
+用户完成诊断后可自愿勾选“允许上传匿名动作特征”，用于后续模型训练。当前只上传姿态关键点、动作指标、质量和冠军比较结果，不上传原始视频。Supabase 表结构见 `supabase/migrations/001_training_samples.sql`；Vercel 需要配置 `SUPABASE_URL` 和 `SUPABASE_SERVICE_ROLE_KEY` 后才会启用保存接口。
+
 ## 本地开发
 
 ```bash

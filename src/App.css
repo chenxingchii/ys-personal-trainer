@@ -996,6 +996,38 @@ h1 {
   line-height: 1.5;
 }
 
+.training-consent {
+  display: grid;
+  gap: 5px;
+  padding: 12px 18px;
+  color: var(--quiet);
+  background: #f5f7f2;
+  border-top: 1px solid var(--line);
+}
+
+.training-consent label {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.45;
+  cursor: pointer;
+}
+
+.training-consent input {
+  width: 16px;
+  height: 16px;
+  margin: 1px 0 0;
+  accent-color: var(--field);
+}
+
+.training-consent small {
+  padding-left: 24px;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 .quality-warning strong,
 .retest-prompt strong,
 .comparison-report strong {

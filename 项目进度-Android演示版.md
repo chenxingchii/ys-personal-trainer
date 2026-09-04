@@ -226,6 +226,8 @@ GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_ed25519_ys_trainer -o IdentitiesOnly=yes" 
 - 当前生效标准：`champion-v1`，来源为 `微信视频2026-09-04_214928_425.mp4`（HEVC 原片已转为 H.264 后完成 MediaPipe 预处理）。
 - 后台比较接口：`/api/diagnose`。接口接收用户动作分析 JSON，不接收原始视频，返回冠军接近度、优先差异和报告所需字段。
 - 当前仅完成比较接口，尚未接入持久化数据库和用户数据采集；后续必须先取得用户授权，再保存匿名姿态特征和教练标签。
+- 已增加用户授权勾选和 `/api/training-samples` 保存接口；接口使用 Supabase REST 写入 `training_samples`，未配置 `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` 时自动停用，不影响本地诊断。
+- Supabase 初始表结构位于 `supabase/migrations/001_training_samples.sql`，当前只保存匿名动作特征，不保存原始视频。
 - 当标注样本达到训练门槛后，再训练姿态时序模型，并通过独立测试集和人工抽查后替换生产标准。
 
 ### 1. 固定 Android 演示地址 ✅ 已完成（含备用地址）
