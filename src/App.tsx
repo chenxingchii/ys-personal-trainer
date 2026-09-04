@@ -33,6 +33,7 @@ import {
   type ComparisonReport,
 } from './reports/diagnosis'
 import { listLocalReports, saveLocalReport, type LocalReport } from './reports/localReports'
+import { getAnonymousAthleteId } from './training/anonymousId'
 import championModelData from './reports/champion-v1.json'
 import {
   compareAnalysisToChampion,
@@ -446,6 +447,7 @@ function App() {
     'idle' | 'uploading' | 'saved' | 'unavailable'
   >('idle')
   const trainingUploadVideoRef = useRef<string | null>(null)
+  const anonymousAthleteId = useMemo(() => getAnonymousAthleteId(), [])
   const comparisonBaseRef = useRef<CoachReport | null>(null)
   const [reportSnapshot, setReportSnapshot] = useState<{
     report: CoachReport
@@ -605,6 +607,7 @@ function App() {
       body: JSON.stringify({
         consent: true,
         consentVersion: 'training-data-v1',
+        athleteIdHash: anonymousAthleteId,
         analysis: jumpAnalysis,
         championComparison,
         metadata: metadata.value,
@@ -618,7 +621,15 @@ function App() {
         trainingUploadVideoRef.current = null
         setTrainingUploadStatus('unavailable')
       })
-  }, [championComparison, coachReport, jumpAnalysis, metadata.value, selectedVideo, trainingConsent])
+  }, [
+    anonymousAthleteId,
+    championComparison,
+    coachReport,
+    jumpAnalysis,
+    metadata.value,
+    selectedVideo,
+    trainingConsent,
+  ])
 
   const qualityMessage =
     qualityCheck && !qualityCheck.passed

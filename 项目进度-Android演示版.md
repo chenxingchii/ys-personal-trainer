@@ -228,6 +228,7 @@ GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_ed25519_ys_trainer -o IdentitiesOnly=yes" 
 - 当前仅完成比较接口，尚未接入持久化数据库和用户数据采集；后续必须先取得用户授权，再保存匿名姿态特征和教练标签。
 - 已增加用户授权勾选和 `/api/training-samples` 保存接口；接口使用 Supabase REST 写入 `training_samples`，未配置 `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` 时自动停用，不影响本地诊断。
 - Supabase 初始表结构位于 `supabase/migrations/001_training_samples.sql`，当前只保存匿名动作特征，不保存原始视频。
+- 已增加内部审核页：部署后访问 `/?admin=1`，使用 `ADMIN_TOKEN` 加载样本、保存教练标签，并从 `/api/training-dataset` 导出已审核 JSONL；`format=manifest` 可获取数据集清单。
 - 当标注样本达到训练门槛后，再训练姿态时序模型，并通过独立测试集和人工抽查后替换生产标准。
 
 ### 1. 固定 Android 演示地址 ✅ 已完成（含备用地址）

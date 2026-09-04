@@ -1,6 +1,7 @@
 create table if not exists public.training_samples (
   id uuid primary key default gen_random_uuid(),
   created_at timestamptz not null default now(),
+  athlete_id_hash text not null,
   consent_version text not null,
   rule_version text not null,
   champion_model_version text not null,
@@ -19,6 +20,9 @@ create index if not exists training_samples_created_at_idx
 
 create index if not exists training_samples_annotation_status_idx
   on public.training_samples (annotation_status);
+
+create index if not exists training_samples_athlete_id_idx
+  on public.training_samples (athlete_id_hash);
 
 alter table public.training_samples enable row level security;
 

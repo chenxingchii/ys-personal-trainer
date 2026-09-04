@@ -15,6 +15,8 @@
 
 用户完成诊断后可自愿勾选“允许上传匿名动作特征”，用于后续模型训练。当前只上传姿态关键点、动作指标、质量和冠军比较结果，不上传原始视频。Supabase 表结构见 `supabase/migrations/001_training_samples.sql`；Vercel 需要配置 `SUPABASE_URL` 和 `SUPABASE_SERVICE_ROLE_KEY` 后才会启用保存接口。
 
+管理员审核页：部署后访问 `/?admin=1`，输入服务端配置的 `ADMIN_TOKEN`，即可加载待审核样本、填写教练标签并导出 `training-dataset-v1.jsonl`。管理员接口不会向普通用户页面展示。
+
 ## 本地开发
 
 ```bash
