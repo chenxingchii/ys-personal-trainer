@@ -1,20 +1,44 @@
 {
-  "framework": "vite",
-  "buildCommand": "pnpm build",
-  "outputDirectory": "dist",
-  "functions": {
-    "api/diagnose.ts": {
-      "runtime": "nodejs20.x",
-      "includeFiles": ["public/models/champion-v1.json"]
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
     },
-    "api/training-samples.ts": {
-      "runtime": "nodejs20.x"
+    {
+      "src": "api/diagnose.ts",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["public/models/champion-v1.json"]
+      }
     },
-    "api/label-sample.ts": {
-      "runtime": "nodejs20.x"
+    {
+      "src": "api/training-samples.ts",
+      "use": "@vercel/node"
     },
-    "api/training-dataset.ts": {
-      "runtime": "nodejs20.x"
+    {
+      "src": "api/label-sample.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/training-dataset.ts",
+      "use": "@vercel/node"
     }
-  }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
 }
