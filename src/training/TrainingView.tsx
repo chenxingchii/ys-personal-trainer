@@ -1,7 +1,7 @@
 import { Dumbbell } from 'lucide-react'
 import { useMemo } from 'react'
 import type { JumpAnalysis } from '../biomechanics/types'
-import { generateTrainingPlan } from './planGenerator'
+import { FREQUENCY_NOTE, generateTrainingPlan } from './planGenerator'
 import type { Exercise } from './exerciseLibrary'
 
 function doseLabel(exercise: Exercise) {
@@ -47,7 +47,11 @@ export function TrainingView({ analysis }: { analysis?: JumpAnalysis }) {
             <span>预计时长</span>
             <strong>{plan.totalMinutes}</strong>
           </div>
-          <div className="plan-meta__item plan-meta__item--wide">
+          <div className="plan-meta__item">
+            <span>训练频率</span>
+            <strong>{plan.frequency}</strong>
+          </div>
+          <div className="plan-meta__item">
             <span>本次针对</span>
             {plan.isMaintenance ? (
               <strong>保持动作节奏</strong>
@@ -90,8 +94,9 @@ export function TrainingView({ analysis }: { analysis?: JumpAnalysis }) {
         ))}
 
         <p className="plan-note">
-          方案由本次动作诊断的指标偏离情况自动匹配，组数与次数为教学经验值，可按自身情况微调。
-          动作过程如有不适请立即停止。
+          方案由本次动作诊断的指标偏离情况自动匹配，是一节以纠正动作模式为目标的练习课；组数与次数为教学经验值，可按自身情况微调。
+          {FREQUENCY_NOTE}
+          如有关节疼痛、肿胀，或两侧力量明显不对称，请先暂停并咨询老师。
         </p>
       </div>
     </section>

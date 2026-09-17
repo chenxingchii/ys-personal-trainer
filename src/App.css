@@ -380,7 +380,7 @@ main {
 
 .plan-meta {
   display: grid;
-  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 0.6fr) minmax(0, 1.6fr);
   gap: 18px;
   padding: 20px 22px;
   background: var(--stage);

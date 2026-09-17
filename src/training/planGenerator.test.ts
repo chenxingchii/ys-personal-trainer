@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { generateTrainingPlan } from './planGenerator'
+import { FREQUENCY_NOTE, generateTrainingPlan } from './planGenerator'
 import { JUMP_RULES } from '../rules/jumpRules'
 import type { JumpAnalysis, MetricId, MetricResult, MetricStatus } from '../biomechanics/types'
 
@@ -56,6 +56,13 @@ describe('训练方案生成', () => {
   it('输出热身、主体和放松三个部分', () => {
     const plan = generateTrainingPlan(makeAnalysis([makeMetric('takeoff-knee', 150)]))
     expect(plan.sections.map((section) => section.kind)).toEqual(['warmup', 'main', 'cooldown'])
+  })
+
+  it('给出训练频率建议与两次之间的间隔', () => {
+    const plan = generateTrainingPlan(makeAnalysis([makeMetric('takeoff-knee', 150)]))
+
+    expect(plan.frequency).toBe('每周 2 次')
+    expect(FREQUENCY_NOTE).toContain('48–72 小时')
   })
 
   it('整节课时长落在 30–60 分钟', () => {

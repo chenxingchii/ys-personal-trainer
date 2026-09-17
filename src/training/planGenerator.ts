@@ -25,6 +25,8 @@ export type TrainingPlan = {
   ruleVersion: string
   /** 整节课预计时长，形如「约 32–39 分钟」。 */
   totalMinutes: string
+  /** 建议训练频率，形如「每周 2 次」。 */
+  frequency: string
   /** 本次重点针对的指标中文名。 */
   focusMetrics: string[]
   /** true 表示本次没有发现待改进指标，方案以巩固节奏为主。 */
@@ -41,6 +43,18 @@ const MIN_MAIN_EXERCISES = 4
 const MAX_FOCUS_METRICS = 5
 /** 主体动作组数上限，用于满足最小时长。 */
 const MAX_MAIN_SETS = 5
+
+/**
+ * 训练频率建议：两次课之间间隔 48–72 小时。
+ * 依据 Davies 等（2015, Int J Sports Phys Ther）：超等长类训练建议每周 2 次、
+ * 两次之间间隔 48–72 小时，且需持续 6–8 周（4 周过短）方能见效。
+ * 被试为无训练监督的普通大学生，取每周 2 次的下限以利于依从性。
+ */
+const FREQUENCY_PER_WEEK = 2
+const FREQUENCY_INTERVAL_HOURS = '48–72'
+
+/** 训练频率提示，供方案页底部说明直接渲染。 */
+export const FREQUENCY_NOTE = `建议每周练 ${FREQUENCY_PER_WEEK} 次、两次之间间隔 ${FREQUENCY_INTERVAL_HOURS} 小时，并持续 6–8 周，动作才会出现稳定变化。`
 
 /** 单组耗时加组间休息，得到该动作的预计耗时（秒）。 */
 function exerciseSeconds(exercise: Exercise) {
@@ -100,6 +114,7 @@ function buildMainItems(analysis: JumpAnalysis | undefined): { items: PlanItem[]
  * 根据诊断结果生成一节 30–60 分钟的训练课。
  *
  * 待改进指标按偏离程度排序后匹配针对性动作；没有待改进指标时返回巩固方案。
+ * 本课定位为「基于动作模式的矫正性练习课」（见 exerciseLibrary.ts 顶部说明）。
  */
 export function generateTrainingPlan(analysis: JumpAnalysis | undefined): TrainingPlan {
   const { items: mainItems, focusMetrics } = buildMainItems(analysis)
@@ -150,6 +165,7 @@ export function generateTrainingPlan(analysis: JumpAnalysis | undefined): Traini
     generatedAt: new Date().toISOString(),
     ruleVersion: analysis?.ruleVersion ?? 'mvp-v0.1',
     totalMinutes: `约 ${low}–${high} 分钟`,
+    frequency: `每周 ${FREQUENCY_PER_WEEK} 次`,
     focusMetrics,
     isMaintenance,
     sections,
