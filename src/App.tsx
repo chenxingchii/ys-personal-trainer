@@ -34,6 +34,7 @@ import {
 } from './reports/diagnosis'
 import { listLocalReports, saveLocalReport, type LocalReport } from './reports/localReports'
 import { getAnonymousAthleteId } from './training/anonymousId'
+import { TrainingView } from './training/TrainingView'
 import championModelData from './reports/champion-v1.json'
 import {
   compareAnalysisToChampion,
@@ -312,15 +313,11 @@ function Dashboard({ reports, onNavigate }: { reports: LocalReport[]; onNavigate
           <strong>{reports.length ? `${reports.length} 份本机记录` : '还没有历史记录'}</strong>
           <span>查看之前上传的视频与报告</span>
         </button>
-        <button
-          className="dashboard-card dashboard-card--disabled"
-          type="button"
-          onClick={() => onNavigate('training')}
-        >
+        <button className="dashboard-card" type="button" onClick={() => onNavigate('training')}>
           <Dumbbell aria-hidden="true" size={24} />
           <span className="dashboard-card__label">训练计划</span>
-          <strong>针对问题安排训练</strong>
-          <span>即将开放 · 当前仅用于展示</span>
+          <strong>{reports.length ? '生成本次训练方案' : '针对问题安排训练'}</strong>
+          <span>{reports.length ? '把诊断结果安排成一节训练课' : '完成一次诊断后即可生成'}</span>
         </button>
         <button
           className="dashboard-card dashboard-card--disabled"
@@ -408,24 +405,18 @@ function HistoryView({
   )
 }
 
-function PlaceholderView({ view }: { view: 'training' | 'movement' }) {
-  const isTraining = view === 'training'
-  const Icon = isTraining ? Dumbbell : ArrowLeftRight
+function MovementPlaceholder() {
   return (
     <section className="subpage" aria-labelledby="placeholder-title">
       <div className="placeholder-panel">
         <span className="placeholder-icon">
-          <Icon aria-hidden="true" size={30} />
+          <ArrowLeftRight aria-hidden="true" size={30} />
         </span>
-        <span className="dashboard-kicker">{isTraining ? '03 / TRAINING' : '04 / MOVEMENT'}</span>
-        <h1 id="placeholder-title">{isTraining ? '训练计划' : '动作切换'}</h1>
-        <p>
-          {isTraining
-            ? '这里会根据你的诊断问题安排训练动作和练习节奏。'
-            : '这里会切换到深蹲、引体向上等其他动作。'}
-        </p>
+        <span className="dashboard-kicker">04 / MOVEMENT</span>
+        <h1 id="placeholder-title">动作切换</h1>
+        <p>这里会切换到深蹲、引体向上等其他动作。</p>
         <button className="placeholder-button" type="button" disabled>
-          {isTraining ? '训练计划即将开放' : '更多动作即将开放'}
+          更多动作即将开放
         </button>
       </div>
     </section>
@@ -700,9 +691,10 @@ function App() {
             onCloseReport={() => setSelectedHistoryReport(null)}
           />
         ) : null}
-        {activeView === 'training' || activeView === 'movement' ? (
-          <PlaceholderView view={activeView} />
+        {activeView === 'training' ? (
+          <TrainingView analysis={jumpAnalysis ?? localReports[0]?.analysis} />
         ) : null}
+        {activeView === 'movement' ? <MovementPlaceholder /> : null}
         {activeView === 'diagnosis' ? (
           <>
             <section className="capture-section" aria-labelledby="capture-title">

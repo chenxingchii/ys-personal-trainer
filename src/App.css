@@ -372,6 +372,172 @@ main {
   color: var(--ink);
 }
 
+.training-plan {
+  display: grid;
+  gap: 26px;
+  margin-top: 38px;
+}
+
+.plan-meta {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+  gap: 18px;
+  padding: 20px 22px;
+  background: var(--stage);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+
+.plan-meta__item {
+  display: grid;
+  gap: 7px;
+  align-content: start;
+}
+
+.plan-meta__item > span {
+  color: var(--quiet);
+  font-family: var(--font-utility);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.plan-meta__item > strong {
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 760;
+}
+
+.focus-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.focus-chip {
+  padding: 5px 10px;
+  color: var(--track-dark);
+  background: #fff3ef;
+  border: 1px solid #f0d5cd;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.plan-section {
+  display: grid;
+  gap: 14px;
+}
+
+.plan-section__heading {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.plan-section__heading h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 760;
+}
+
+.plan-section__heading p {
+  flex: 1 1 260px;
+  margin: 0;
+  color: var(--quiet);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.plan-section--main .plan-section__heading h2 {
+  padding-left: 12px;
+  border-left: 4px solid var(--track);
+}
+
+.plan-items {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-item {
+  display: grid;
+  gap: 9px;
+  padding: 18px 20px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line-strong);
+  border-radius: 5px;
+}
+
+.plan-section--main .plan-item {
+  border-left-color: var(--track);
+}
+
+.plan-item__head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.plan-item__head strong {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 760;
+}
+
+.plan-item__dose {
+  padding: 4px 10px;
+  color: var(--ink);
+  background: var(--signal);
+  border-radius: 4px;
+  font-family: var(--font-utility);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.plan-item p {
+  margin: 0;
+  color: var(--quiet);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.plan-item__foot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--quiet);
+  font-size: 12px;
+}
+
+.plan-item__target {
+  padding: 3px 9px;
+  color: var(--field);
+  background: #e8f1eb;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.plan-note {
+  margin: 0;
+  padding: 14px 16px;
+  color: var(--quiet);
+  background: var(--stage);
+  border-radius: 5px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
 .placeholder-panel {
   min-height: 420px;
   display: grid;
@@ -1463,6 +1629,24 @@ footer {
   .history-card__action {
     grid-column: 2;
     justify-self: start;
+  }
+
+  .training-plan {
+    margin-top: 28px;
+  }
+
+  .plan-meta {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 18px;
+  }
+
+  .plan-section__heading h2 {
+    font-size: 20px;
+  }
+
+  .plan-item {
+    padding: 15px 16px;
   }
 
   .placeholder-panel {

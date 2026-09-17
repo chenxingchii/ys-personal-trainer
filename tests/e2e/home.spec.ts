@@ -11,7 +11,7 @@ test('首页提供两个视频入口和正确的拍摄模式', async ({ page }) 
   await expect(page.locator('input[capture="environment"]')).toHaveAttribute('accept', 'video/*')
 })
 
-test('主界面可以进入历史报告和两个占位功能', async ({ page }) => {
+test('主界面可以进入历史报告、训练计划和动作切换', async ({ page }) => {
   await page.goto('/')
 
   await page.getByRole('button', { name: '历史报告', exact: true }).click()
@@ -19,6 +19,7 @@ test('主界面可以进入历史报告和两个占位功能', async ({ page }) 
 
   await page.getByRole('button', { name: '训练计划', exact: true }).click()
   await expect(page.getByRole('heading', { name: '训练计划' })).toBeVisible()
+  await expect(page.getByText('还没有可用的诊断结果')).toBeVisible()
 
   await page.getByRole('button', { name: '动作切换', exact: true }).click()
   await expect(page.getByRole('heading', { name: '动作切换' })).toBeVisible()

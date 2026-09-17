@@ -104,12 +104,16 @@ describe('视频准备页', () => {
     expect(screen.getByRole('button', { name: '动作切换' })).toBeInTheDocument()
   })
 
-  it('训练计划和动作切换显示 MVP 占位状态', () => {
+  it('还没有诊断结果时，训练计划给出引导空态', () => {
     render(<App />)
 
     fireEvent.click(screen.getByRole('button', { name: /^训练计划$/ }))
     expect(screen.getByRole('heading', { name: '训练计划' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '训练计划即将开放' })).toBeDisabled()
+    expect(screen.getByText('还没有可用的诊断结果')).toBeInTheDocument()
+  })
+
+  it('动作切换仍显示 MVP 占位状态', () => {
+    render(<App />)
 
     fireEvent.click(screen.getByRole('button', { name: /^动作切换$/ }))
     expect(screen.getByRole('heading', { name: '动作切换' })).toBeInTheDocument()
