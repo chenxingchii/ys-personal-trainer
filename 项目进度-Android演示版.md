@@ -1,7 +1,7 @@
 ---
 type: project-status
 status: active
-para: inbox
+para: project
 created: 2026-09-02
 updated: 2026-09-05
 deploy: https://ys-personal-trainer.vercel.app
@@ -16,7 +16,18 @@ tags: [YS专属训练师, 项目进度, Android, PWA, MVP]
 
 ## 当前结论
 
-项目已完成可演示的移动端 Web MVP，当前进入 **Android 演示版验证阶段**。完整项目已推送到 GitHub 仓库。主部署为 Vercel 固定 HTTPS 地址 <https://ys-personal-trainer.vercel.app>；因 `*.vercel.app` 在中国大陆裸连不稳定，另已上线 GitHub Pages 备用地址（见「GitHub Pages 备用地址」）。可直接在 Android Chrome 打开并添加到主屏幕。核心流程可以在 Android Chrome 中运行；PWA 基础已加入。当前暂不处理 iOS、微信小程序和在线大模型诊断。
+项目已完成可演示的移动端 Web MVP，当前进入 **Android 演示版验证阶段**。完整项目已推送到 GitHub 仓库。
+
+> ⚠️ **2026-09-17 网络实测结论（重要，先读这段）**
+> `ys-personal-trainer.vercel.app` 已被 **DNS 污染**（解析到 `104.244.46.9`＝Twitter 网段、`2a03:2880::`＝Facebook 网段），TCP 连接直接超时。**这是网络层问题，不是部署故障，换电脑也不解决。** Vercel 上的 `/api/diagnose`、`/api/training-samples`、`/api/training-dataset` 与 `/?admin=1` 教练后台**全部不可达**。
+> **演示与真机验收一律改用 GitHub Pages 地址**：<https://chenxingchii.github.io/ys-personal-trainer/>（实测 1.7 秒可达，模型与 WASM 资源齐全）。Vercel 仅作为 API 后台保留（当前不可用）。
+
+> ✅ **2026-11-01 发布管道修复完成（重要，先读这段）**
+> 此前 **9-04 之后的所有改动从未推送到远程**（远程 `main` 停在 `8ca0dfb`），GitHub Pages 上跑的因此一直是 9 月 4 日的旧版——训练方案引擎虽已完成，线上从未存在。本轮已推送 `0060c75`、`827f956`，Pages 重建至 run **#22** 全绿，线上 bundle 已含全部新功能。
+> 同轮完成：**诊断质量门分级**（`blocked` / `degraded` 两档，降级样本仍出报告并在顶部标注缺口）、**静态环境显式降级**（后端不可达时冠军比较标注「本地标准」，上传文案改为「当前访问地址不提供数据上传」）、**`LocalReport.qualityTier`**（`verified` / `degraded`，实验数据采集只取 `verified`）。
+> ⚠️ 教训：**代码改完没 push，等于没做**。每次功能完成后应立即推送并确认 Actions 绿。
+
+可直接在 Android Chrome 打开并添加到主屏幕。核心流程可以在 Android Chrome 中运行；PWA 基础已加入。当前暂不处理 iOS、微信小程序和在线大模型诊断。
 
 ### 📌 现在进行到哪一步
 
@@ -28,7 +39,7 @@ tags: [YS专属训练师, 项目进度, Android, PWA, MVP]
 - ✅ **冠军标准 v1：** 已将桌面冠军视频预处理为 `public/models/champion-v1.json`，Vercel 通过 `/api/diagnose` 使用该标准，用户上传视频后自动比较；无 API 的本地 / Pages 环境自动使用同一比较逻辑回退。
 - ✅ Supabase：已执行 `training_samples` 表迁移，并在 Vercel 配置 `SUPABASE_URL`、`SUPABASE_SERVICE_ROLE_KEY`、`ADMIN_TOKEN`。
 - ✅ API 线上验证：`/api/diagnose` 可返回冠军比较结果；训练样本、标注和数据集接口的鉴权响应正常。
-- ⚠️ 网络提示：主地址 `*.vercel.app` 中国大陆直连可能不稳定；**备用地址 `*.github.io` 裸连可访问，演示优先用它**。
+- ⚠️ 网络提示（2026-09-17 已实测确认）：主地址 `*.vercel.app` 已被 **DNS 污染**，本机与手机均无法连接；**`*.github.io` 裸连可访问，演示与验收优先用它**。
 
 > 若你是新接手此项目的 Agent：先读本文件，再用 `git log --oneline` 与 `git status` 确认最新提交与工作区状态；优先进行真实视频采集、教练审核和数据集质量检查，不要直接替换 `champion-v1`。
 
@@ -180,7 +191,7 @@ GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_ed25519_ys_trainer -o IdentitiesOnly=yes" 
 
 部署地址确认可访问后，在 Android Chrome 中逐项验收：
 
-1. 打开 **https://ys-personal-trainer.vercel.app**，等待模型资源加载完成（首次较慢）。
+1. 打开 **https://chenxingchii.github.io/ys-personal-trainer/**（Vercel 地址已被 DNS 污染，不可用），等待模型资源加载完成（首次较慢）。
 2. 授权相机权限，拍摄一段视频。
 3. 或选择一段已录好的“侧面固定机位、全身入镜、准备到落地完整”的视频。
 4. 等待视频质量检查通过（时长、分辨率、姿态可识别）。
