@@ -22,10 +22,27 @@ tags: [YS专属训练师, 项目进度, Android, PWA, MVP]
 > `ys-personal-trainer.vercel.app` 已被 **DNS 污染**（解析到 `104.244.46.9`＝Twitter 网段、`2a03:2880::`＝Facebook 网段），TCP 连接直接超时。**这是网络层问题，不是部署故障，换电脑也不解决。** Vercel 上的 `/api/diagnose`、`/api/training-samples`、`/api/training-dataset` 与 `/?admin=1` 教练后台**全部不可达**。
 > **演示与真机验收一律改用 GitHub Pages 地址**：<https://chenxingchii.github.io/ys-personal-trainer/>（实测 1.7 秒可达，模型与 WASM 资源齐全）。Vercel 仅作为 API 后台保留（当前不可用）。
 
-> ✅ **2026-11-01 发布管道修复完成（重要，先读这段）**
-> 此前 **9-04 之后的所有改动从未推送到远程**（远程 `main` 停在 `8ca0dfb`），GitHub Pages 上跑的因此一直是 9 月 4 日的旧版——训练方案引擎虽已完成，线上从未存在。本轮已推送 `0060c75`、`827f956`，Pages 重建至 run **#22** 全绿，线上 bundle 已含全部新功能。
-> 同轮完成：**诊断质量门分级**（`blocked` / `degraded` 两档，降级样本仍出报告并在顶部标注缺口）、**静态环境显式降级**（后端不可达时冠军比较标注「本地标准」，上传文案改为「当前访问地址不提供数据上传」）、**`LocalReport.qualityTier`**（`verified` / `degraded`，实验数据采集只取 `verified`）。
-> ⚠️ 教训：**代码改完没 push，等于没做**。每次功能完成后应立即推送并确认 Actions 绿。
+> ✅ **2026-11-01 大规模改造完成（重要，先读这段）**
+> **最新提交 `fa5b7a4`｜Actions run #29 success｜单元测试 87 通过 / 0 失败（15 文件）｜线上 bundle `index-CbhH43MK.js`**
+>
+> 本轮修掉的头号问题：**9-04 之后的所有改动从未推送到远程**（远程停在 `8ca0dfb`），Pages 上跑的一直是旧版。已全部推送并连续部署四次（#22 / #24 / #26 / #27 / #29）。
+> ⚠️ 教训：**代码改完没 push，等于没做**。每次功能完成后立即推送并确认 Actions 绿。
+>
+> 本轮完成的功能：
+> - **评价层重建**：新增 `src/reports/assessment.ts`，11 项指标全量评价、四阶段分组、两条可推导因果链；11/11 项都有专属文案（此前 5 项走兜底）。
+> - **8 周周期化**：新增 `src/training/programGenerator.ts`。此前 `generateTrainingPlan` 无状态，同一诊断必出同一张课表；现在时间驱动负荷步进。
+> - **诊断质量门分级**：`blocked` / `degraded` 两档，降级样本仍出报告并标注缺口；`qualityTier` 供实验口径过滤。
+> - **教师一机管多人**：新增 `src/storage/`（IndexedDB）。受试者名册、报告按 `subjectId` 分区、8 周起点挂个人、修掉 5 处串人逻辑。**`reports.slice(0, 20)` 硬截断已删除**。
+> - **数据导出**：一键导出全库 JSON，文件名带日期。
+> - **成绩录入**：诊断后补录立定跳远成绩与测试时点（T0/T1/T2）；受试者档案可标实验分组（G1/G2/G3）。
+> - **CSV 转换脚本**：`tools/export_to_csv.py`，把 JSON 摊成名册 / 宽表 / 长表三张表，主结局三列自动带出。
+>
+> **已知问题与下次待办**：
+> 1. **首次加载要下 20.2 MB**（WASM 11.2 + 模型 9.0），实测 23 KB/s → 约 14 分钟，界面只显示「正在准备识别引擎」，像卡死。**加载一次后 Service Worker 会缓存，之后秒开。**可选改进：默认换 lite 模型（省 3.5 MB，但精度略降，影响实验数据，需先拍板）。
+> 2. **导入功能未做**——导出是单向的，换机或误清数据无法恢复。
+> 3. **旧 localStorage 数据迁移未做**。
+> 4. **Android 真机验收未做**（用 Pages 地址）。
+> 5. 名册删除入口未做（`deleteSubject` 已实现且测试过，只差 UI）。
 
 可直接在 Android Chrome 打开并添加到主屏幕。核心流程可以在 Android Chrome 中运行；PWA 基础已加入。当前暂不处理 iOS、微信小程序和在线大模型诊断。
 
