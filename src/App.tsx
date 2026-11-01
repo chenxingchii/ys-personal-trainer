@@ -5,6 +5,7 @@ import {
   Check,
   ClipboardList,
   Dumbbell,
+  Download,
   FileVideo,
   FileText,
   FolderOpen,
@@ -37,6 +38,7 @@ import { buildAssessment } from './reports/assessment'
 import type { LocalReport } from './reports/localReports'
 import { getActiveSubject, listSubjects, createSubject, setActiveSubjectId, type Subject } from './storage/subjects'
 import { listReportsBySubject, saveReport } from './storage/reports'
+import { buildExportPayload, downloadExport } from './storage/exportData'
 import { getAnonymousAthleteId } from './training/anonymousId'
 import { TrainingView } from './training/TrainingView'
 import championModelData from './reports/champion-v1.json'
@@ -314,11 +316,15 @@ function SubjectBar({
   subjects,
   onSwitch,
   onCreate,
+  onExport,
+  exportHint,
 }: {
   activeSubject: Subject | null
   subjects: Subject[]
   onSwitch: (subject: Subject) => void
   onCreate: (input: { id: string; name?: string; group: string }) => void
+  onExport: () => void
+  exportHint: string | null
 }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -406,6 +412,13 @@ function SubjectBar({
             <button type="button" onClick={submit} disabled={!newId.trim()}>
               新建并切换
             </button>
+          </div>
+          <div className="subject-panel__export">
+            <button type="button" onClick={onExport}>
+              <Download aria-hidden="true" size={16} />
+              <span>导出全部数据（JSON）</span>
+            </button>
+            {exportHint ? <span className="subject-panel__hint">{exportHint}</span> : null}
           </div>
         </div>
       ) : null}
@@ -848,6 +861,16 @@ function App() {
     setSelectedHistoryReport(report)
   }, [])
 
+  const [exportHint, setExportHint] = useState<string | null>(null)
+
+  const handleExport = useCallback(() => {
+    void (async () => {
+      const payload = await buildExportPayload()
+      downloadExport(payload)
+      setExportHint(`已导出 ${payload.subjects.length} 名受试者 · ${payload.reports.length} 条记录`)
+    })()
+  }, [])
+
   const handleSwitchSubject = useCallback((subject: Subject) => {
     setActiveSubject(subject)
     setActiveSubjectId(subject.id)
@@ -894,6 +917,8 @@ function App() {
         subjects={subjects}
         onSwitch={handleSwitchSubject}
         onCreate={handleCreateSubject}
+        onExport={handleExport}
+        exportHint={exportHint}
       />
 
       <div className="navigation-wrap">
