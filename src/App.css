@@ -1178,6 +1178,24 @@ h1 {
   font-size: 14px;
 }
 
+.champion-comparison__source {
+  color: #5c7a72;
+  font-family: var(--font-utility);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.analysis-degraded-note {
+  margin: 8px 0 0;
+  padding: 10px 14px;
+  color: #7a5310;
+  background: #fff8e8;
+  border-left: 3px solid #d9a441;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .champion-comparison p {
   margin: 6px 0 0;
   color: var(--quiet);

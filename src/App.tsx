@@ -158,10 +158,14 @@ function AnalysisReport({
   report,
   comparison,
   championComparison,
+  championBackendState,
+  degraded,
 }: {
   report: CoachReport
   comparison?: ComparisonReport
   championComparison?: ChampionComparison
+  championBackendState?: 'idle' | 'ok' | 'unavailable'
+  degraded?: string[]
 }) {
   return (
     <section className="analysis-report" aria-labelledby="analysis-report-title">
@@ -171,6 +175,9 @@ function AnalysisReport({
           <h2 id="analysis-report-title">{report.headline}</h2>
         </div>
       </div>
+      {degraded?.length ? (
+        <p className="analysis-degraded-note">本次结果受限：{degraded.join('；')}</p>
+      ) : null}
 
       {report.hasPriority ? (
         <div className="priority-report">
@@ -227,6 +234,11 @@ function AnalysisReport({
             <span>冠军标准 · {championComparison.modelId}</span>
             <strong>{championComparison.closeness}% 接近度</strong>
           </div>
+          {championBackendState === 'unavailable' ? (
+            <small className="champion-comparison__source">
+              本地标准 · 与内置 {championComparison.modelId} 比对（当前访问地址未连接后端）
+            </small>
+          ) : null}
           <strong>{championComparison.title}</strong>
           <p>{championComparison.summary}</p>
         </div>
@@ -432,6 +444,7 @@ function App() {
   const [qualityCheck, setQualityCheck] = useState<VideoQualityResult | null>(null)
   const [isRetest, setIsRetest] = useState(false)
   const [backendChampionComparison, setBackendChampionComparison] = useState<ChampionComparison | null>(null)
+  const [championBackendState, setChampionBackendState] = useState<'idle' | 'ok' | 'unavailable'>('idle')
   const [previousAnalysisForReport, setPreviousAnalysisForReport] = useState<JumpAnalysis | undefined>()
   const [trainingConsent, setTrainingConsent] = useState(false)
   const [trainingUploadStatus, setTrainingUploadStatus] = useState<
@@ -503,14 +516,15 @@ function App() {
   )
   const localChampionComparison = useMemo(
     () =>
-      jumpAnalysis && (!analysisQuality || analysisQuality.passed)
+      jumpAnalysis && (!analysisQuality || !analysisQuality.blocked)
         ? compareAnalysisToChampion(jumpAnalysis, championModel)
         : undefined,
     [analysisQuality, jumpAnalysis],
   )
   useEffect(() => {
     setBackendChampionComparison(null)
-    if (!jumpAnalysis || (analysisQuality && !analysisQuality.passed)) return
+    setChampionBackendState('idle')
+    if (!jumpAnalysis || analysisQuality?.blocked) return
     let active = true
     void fetch('/api/diagnose', {
       method: 'POST',
@@ -522,9 +536,13 @@ function App() {
         return (await response.json()) as ChampionComparison
       })
       .then((comparison) => {
-        if (active) setBackendChampionComparison(comparison)
+        if (!active) return
+        setBackendChampionComparison(comparison)
+        setChampionBackendState('ok')
       })
-      .catch(() => undefined)
+      .catch(() => {
+        if (active) setChampionBackendState('unavailable')
+      })
     return () => {
       active = false
     }
@@ -532,7 +550,7 @@ function App() {
   const championComparison = backendChampionComparison ?? localChampionComparison
   const coachReport = useMemo(
     () =>
-      jumpAnalysis && (!analysisQuality || analysisQuality.passed)
+      jumpAnalysis && (!analysisQuality || !analysisQuality.blocked)
         ? buildCoachReport(
             championComparison?.priority
               ? { ...jumpAnalysis, priority: championComparison.priority }
@@ -563,6 +581,7 @@ function App() {
       analysis: jumpAnalysis,
       coachReport,
       championComparison,
+      qualityTier: analysisQuality?.passed ? 'verified' : 'degraded',
     })
     if (saved) {
       savedReportVideoRef.current = selectedVideo.url
@@ -625,13 +644,13 @@ function App() {
   const qualityMessage =
     qualityCheck && !qualityCheck.passed
       ? qualityCheck.issues[0]
-      : analysisQuality && !analysisQuality.passed
+      : analysisQuality?.blocked
         ? analysisQuality.issues[0]
         : null
   const qualityAdvice =
     qualityCheck && !qualityCheck.passed
       ? qualityCheck.advice[0]
-      : analysisQuality && !analysisQuality.passed
+      : analysisQuality?.blocked
         ? analysisQuality.advice[0]
         : null
 
@@ -845,7 +864,9 @@ function App() {
                           只上传姿态关键点和动作指标，不上传原始视频。
                           {trainingUploadStatus === 'uploading' ? '正在保存…' : null}
                           {trainingUploadStatus === 'saved' ? '已保存。' : null}
-                          {trainingUploadStatus === 'unavailable' ? '后台尚未配置，当前不会上传。' : null}
+                          {trainingUploadStatus === 'unavailable'
+                            ? '当前访问地址不提供数据上传，本次记录只保存在本机。'
+                            : null}
                         </small>
                       </div>
                     ) : null}
@@ -865,6 +886,8 @@ function App() {
                         report={reportSnapshot.report}
                         comparison={reportSnapshot.comparison}
                         championComparison={reportSnapshot.championComparison}
+                        championBackendState={championBackendState}
+                        degraded={analysisQuality?.degraded}
                       />
                     ) : null}
                     {reportSnapshot && showReport ? <LocalHistory reports={localReports} /> : null}

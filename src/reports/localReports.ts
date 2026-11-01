@@ -12,6 +12,8 @@ export type LocalReport = {
   analysis: JumpAnalysis
   coachReport: CoachReport
   championComparison?: ChampionComparison
+  /** verified = 全部门通过，具备实验数据采集资格；degraded = 存在可降级缺陷，仅作个人参考 */
+  qualityTier?: 'verified' | 'degraded'
 }
 
 function readReports(): LocalReport[] {
