@@ -11,6 +11,8 @@ export type PlanItem = {
   exercise: Exercise
   /** 该动作针对的指标中文名；热身、放松与保底动作为空。 */
   metricLabel?: string
+  /** 按偏离严重度追加的组数（0—2）；保底动作为空。 */
+  severityBoost?: number
 }
 
 export type PlanSection = {
@@ -79,6 +81,19 @@ function deviationScore(metric: MetricResult) {
   return distance * metric.weight * metric.confidence
 }
 
+/**
+ * 偏离程度 → 追加组数。同一项缺陷，偏离越明显，单次课剂量越大。
+ * 这是「个性化」在剂量上的落地：同指标不同严重度的人拿到不同处方。
+ * ⚠️ 分档阈值 0.5 / 1.0 为教学经验值，与 exerciseLibrary.ts 的 TODO(教练复核) 同属待复核项。
+ */
+function severityBoostOf(metric: MetricResult) {
+  if (metric.value === undefined) return 0
+  const excess = Math.abs(metric.value - metric.target) / Math.max(metric.tolerance, 1)
+  if (excess >= 1) return 2
+  if (excess >= 0.5) return 1
+  return 0
+}
+
 function withSets(exercise: Exercise, sets: number): Exercise {
   return { ...exercise, sets }
 }
@@ -95,7 +110,7 @@ function buildMainItems(analysis: JumpAnalysis | undefined): { items: PlanItem[]
     const exercise = findExerciseForMetric(metric.id)
     if (!exercise || usedExerciseIds.has(exercise.id)) continue
     usedExerciseIds.add(exercise.id)
-    items.push({ exercise, metricLabel: metric.label })
+    items.push({ exercise, metricLabel: metric.label, severityBoost: severityBoostOf(metric) })
   }
 
   // 指标不足时按动作库顺序补位，保证训练课的主体容量；
@@ -110,13 +125,25 @@ function buildMainItems(analysis: JumpAnalysis | undefined): { items: PlanItem[]
   return { items, focusMetrics: items.flatMap((item) => (item.metricLabel ? [item.metricLabel] : [])) }
 }
 
+export type PlanOptions = {
+  /** 周期化负荷步进：0 = 基准剂量。见 training/programGenerator.ts 的 PHASE_OF_WEEK。 */
+  loadStep?: number
+}
+
 /**
  * 根据诊断结果生成一节 30–60 分钟的训练课。
  *
  * 待改进指标按偏离程度排序后匹配针对性动作；没有待改进指标时返回巩固方案。
  * 本课定位为「基于动作模式的矫正性练习课」（见 exerciseLibrary.ts 顶部说明）。
+ *
+ * `loadStep` 由 8 周周期化提供：同一份诊断在不同周次会得到不同组数，
+ * 这是「渐进负荷」在代码里真正生效的地方（见 programGenerator.ts 顶部说明）。
  */
-export function generateTrainingPlan(analysis: JumpAnalysis | undefined): TrainingPlan {
+export function generateTrainingPlan(
+  analysis: JumpAnalysis | undefined,
+  options: PlanOptions = {},
+): TrainingPlan {
+  const loadStep = Math.max(0, Math.round(options.loadStep ?? 0))
   const { items: mainItems, focusMetrics } = buildMainItems(analysis)
   const isMaintenance = focusMetrics.length === 0
 
@@ -143,17 +170,25 @@ export function generateTrainingPlan(analysis: JumpAnalysis | undefined): Traini
     },
   ]
 
-  let sections = buildSections(mainItems)
+  const withBoost = (boost: number) =>
+    buildSections(
+      mainItems.map((item) => ({
+        ...item,
+        exercise: withSets(
+          item.exercise,
+          Math.min(MAX_MAIN_SETS, item.exercise.sets + boost + (item.severityBoost ?? 0)),
+        ),
+      })),
+    )
+
+  // 先套用周期化负荷步进，再按需补足到 30 分钟下限。
+  let sections = withBoost(loadStep)
 
   // 指标较少时整节课会偏短，逐轮增加主体组数直到落入 30–60 分钟。
   let setsBoost = 0
   while (planSeconds(sections) < MIN_TOTAL_SECONDS && setsBoost + 3 < MAX_MAIN_SETS) {
     setsBoost += 1
-    const boosted = mainItems.map((item) => ({
-      ...item,
-      exercise: withSets(item.exercise, item.exercise.sets + setsBoost),
-    }))
-    sections = buildSections(boosted)
+    sections = withBoost(setsBoost + loadStep)
   }
 
   // 报出估算区间，并把上下限夹在一节训练课的合理范围内。

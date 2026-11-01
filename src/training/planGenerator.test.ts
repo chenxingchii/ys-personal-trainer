@@ -103,4 +103,26 @@ describe('训练方案生成', () => {
     expect(plan.isMaintenance).toBe(true)
     expect(mainItems(plan).length).toBeGreaterThanOrEqual(4)
   })
+
+  it('同一指标偏离越严重，训练剂量越大', () => {
+    // takeoff-knee 目标 168、容差 8：166 → 偏离 0.25（轻）；160 → 偏离 1.0（重）
+    const mild = generateTrainingPlan(makeAnalysis([makeMetric('takeoff-knee', 166)]))
+    const severe = generateTrainingPlan(makeAnalysis([makeMetric('takeoff-knee', 160)]))
+
+    const sets = (plan: ReturnType<typeof generateTrainingPlan>) =>
+      mainItems(plan).reduce((sum, item) => sum + item.exercise.sets, 0)
+
+    expect(sets(severe)).toBeGreaterThan(sets(mild))
+  })
+
+  it('周期化负荷步进会改变同一份诊断的组数', () => {
+    const analysis = makeAnalysis([makeMetric('takeoff-knee', 166)])
+    const week1 = generateTrainingPlan(analysis, { loadStep: 0 })
+    const week5 = generateTrainingPlan(analysis, { loadStep: 2 })
+
+    const sets = (plan: ReturnType<typeof generateTrainingPlan>) =>
+      mainItems(plan).reduce((sum, item) => sum + item.exercise.sets, 0)
+
+    expect(sets(week5)).toBeGreaterThan(sets(week1))
+  })
 })

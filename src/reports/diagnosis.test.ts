@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildCoachReport, compareCoachReports } from './diagnosis'
-import type { JumpAnalysis } from '../biomechanics/types'
+import { JUMP_RULES } from '../rules/jumpRules'
+import type { JumpAnalysis, MetricId, MetricResult } from '../biomechanics/types'
 import type { ChampionComparison } from './championModel'
 
 const base: JumpAnalysis = {
@@ -69,5 +70,38 @@ describe('教练诊断报告', () => {
     const report = buildCoachReport(base, { championComparison })
     expect(report.evidence).toContain('本次预蹬地胫骨角为 4.0°')
     expect(report.observation).toContain('属于明显差异')
+  })
+
+  it('11 项指标都有专属文案，没有任何一项落到兜底模板', () => {
+    const FALLBACK_HEADLINE = '先把动作节奏做稳定'
+    const ids = JUMP_RULES.map((rule) => rule.id) as MetricId[]
+
+    for (const id of ids) {
+      const rule = JUMP_RULES.find((item) => item.id === id)!
+      const metric: MetricResult = {
+        id,
+        label: rule.label,
+        value: rule.range[0] - rule.tolerance,
+        unit: '°',
+        target: rule.target,
+        range: rule.range,
+        tolerance: rule.tolerance,
+        status: 'needs-improvement',
+        confidence: 0.9,
+        weight: rule.weight,
+        hint: rule.hint,
+      }
+      const report = buildCoachReport({ ...base, priority: metric })
+
+      expect(report.headline, `${id} 落到了兜底文案`).not.toBe(FALLBACK_HEADLINE)
+      expect(report.priority).not.toBe('动作节奏稳定性')
+      expect(report.drill.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('把评价结果带进报告，供界面展示完整画像', () => {
+    const report = buildCoachReport(base)
+
+    expect(report.assessment).toBeUndefined()
   })
 })

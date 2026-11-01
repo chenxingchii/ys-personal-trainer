@@ -1,5 +1,6 @@
 import type { JumpAnalysis, MetricResult } from '../biomechanics/types'
 import type { ChampionComparison } from './championModel'
+import type { Assessment } from './assessment'
 
 export type CoachReport = {
   hasPriority: boolean
@@ -12,6 +13,8 @@ export type CoachReport = {
   confidenceNote: string
   evidence?: string
   trend?: string
+  /** 完整动作评价；历史报告（旧 localStorage 数据）中没有这个字段。 */
+  assessment?: Assessment
 }
 
 export type ComparisonReport = {
@@ -23,6 +26,7 @@ export type ComparisonReport = {
 export type DiagnosisContext = {
   championComparison?: ChampionComparison
   previousAnalysis?: JumpAnalysis
+  assessment?: Assessment
 }
 
 const coachLabels: Record<string, string> = {
@@ -32,6 +36,11 @@ const coachLabels: Record<string, string> = {
   'arm-swing-range': '摆臂连贯性',
   'takeoff-knee': '离地蹬伸完成度',
   'landing-lowest-knee': '落地缓冲控制',
+  'backward-arm': '后摆蓄力',
+  'forward-arm': '前摆发力',
+  'landing-contact-knee': '落地接触控制',
+  'landing-buffer': '落地缓冲幅度',
+  'knee-asymmetry': '左右腿均衡',
 }
 
 function directionOf(metric: MetricResult, low: string, high: string) {
@@ -83,6 +92,7 @@ export function buildCoachReport(analysis: JumpAnalysis, context: DiagnosisConte
       drill: '做 2 组连续纵跳，每组 8 次，重点保持落地安静、身体稳定。',
       confidenceNote: '本报告基于侧面视频估计，仅作为训练参考。',
       evidence: '当前没有发现需要优先处理的明显差异。',
+      assessment: context.assessment,
     }
   }
 
@@ -135,6 +145,46 @@ export function buildCoachReport(analysis: JumpAnalysis, context: DiagnosisConte
       drill: '做 2 组落地定格，每组 5 次；落地后保持 2 秒再起身。',
       confidenceNote: '落地判断来自侧面视频估计，不代表医学或伤病结论。',
     },
+    'backward-arm': {
+      headline: '预蹲时把手臂向后摆足',
+      observation: `预蹲时手臂${directionOf(metric, '后摆过度，身体容易被带向后', '后摆不足，蓄力时间不够')}。`,
+      impact: '后摆是起跳蓄力的起点，后摆不到位会压缩整个摆臂行程，起跳时上肢帮不上力。',
+      coachingCue: '预蹲下沉的同时把手臂自然向后送出去，感觉到肩前有拉开的感觉再起跳。',
+      drill: '做 3 组摆臂蓄力，每组 8 次；只练后摆到位后停半秒，再配合起跳。',
+      confidenceNote: '后摆角度来自侧面视频估计，重点看每次后摆是否到位。',
+    },
+    'forward-arm': {
+      headline: '起跳瞬间把手臂快速向前上方带',
+      observation: `起跳时手臂${directionOf(metric, '前摆不够，带不动身体', '前摆过度，节奏容易抢拍')}。`,
+      impact: '前摆是起跳的加速环节，摆臂与蹬地不同步会损失一部分向上的动量。',
+      coachingCue: '脚一蹬地，手臂同时向前上方摆，两者在同一拍完成。',
+      drill: '做 3 组快速前摆跳，每组 8 次；每一次都要求手臂和蹬地同时启动。',
+      confidenceNote: '前摆角度来自侧面视频估计，重点看手臂与蹬地的同步。',
+    },
+    'landing-contact-knee': {
+      headline: '落地瞬间别让膝盖锁死',
+      observation: `落地接触时膝盖${directionOf(metric, '偏直，冲击没有被吸收', '过屈，重心容易塌下')}。`,
+      impact: '接触瞬间的膝角决定了冲击如何被吸收，也影响落地后能否快速稳定。',
+      coachingCue: '脚掌触地的瞬间膝盖保持微屈，不要等到落地后才开始弯。',
+      drill: '做 3 组落地定格，每组 5 次；触地瞬间就要看到膝盖有屈曲。',
+      confidenceNote: '落地判断来自侧面视频估计，不代表医学或伤病结论。',
+    },
+    'landing-buffer': {
+      headline: '从接触地面到最低点留出缓冲',
+      observation: `落地缓冲幅度${directionOf(metric, '偏小，落地偏硬', '偏大，重心下沉过多')}。`,
+      impact: '缓冲幅度是接触膝角与最低膝角的差值，过小说明冲击没有被吸收，过大则影响下一次起跳准备。',
+      coachingCue: '落地后让身体自然下沉一点再稳住，不要硬生生停住。',
+      drill: '做 3 组缓冲跳跃，每组 6 次；重点体会从触地到最低点的这一段。',
+      confidenceNote: '缓冲幅度由两个阶段角度相减得到，建议结合落地定格一起练。',
+    },
+    'knee-asymmetry': {
+      headline: '让左右腿的动作尽量对称',
+      observation: `两侧膝角${directionOf(metric, '基本一致', '差异偏大，一侧明显更稳或更用力')}。`,
+      impact: '两侧差异过大会让发力偏向一侧，长期可能影响动作稳定和左右力量均衡。',
+      coachingCue: '做单侧动作时，弱侧多留意膝盖方向，两侧次数保持一致。',
+      drill: '做 3 组单腿平衡蹲，每组每侧 6 次；弱侧先做，强侧按弱侧的次数完成。',
+      confidenceNote: '左右差异来自侧面视频估计，侧面遮挡明显时该项不作判断。',
+    },
   }
   const copy = reports[metric.id] ?? {
     headline: '先把动作节奏做稳定',
@@ -154,6 +204,7 @@ export function buildCoachReport(analysis: JumpAnalysis, context: DiagnosisConte
     coachingCue: trend ? `${copy.coachingCue} ${trend}` : copy.coachingCue,
     evidence,
     trend,
+    assessment: context.assessment,
   }
 }
 

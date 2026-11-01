@@ -2,7 +2,30 @@ import { Dumbbell } from 'lucide-react'
 import { useMemo } from 'react'
 import type { JumpAnalysis } from '../biomechanics/types'
 import { FREQUENCY_NOTE, generateTrainingPlan } from './planGenerator'
+import { generateProgram, phaseOf, type TrainingProgram } from './programGenerator'
 import type { Exercise } from './exerciseLibrary'
+
+const PROGRAM_START_KEY = 'ys-personal-trainer.program.start'
+
+/**
+ * 训练周期的起点。首次进入训练页时写入本机，之后一直沿用，
+ * 这样即使用户不复测，第 5 周的训练量也会不同于第 1 周（见 programGenerator.ts）。
+ */
+function readProgramStart(): string {
+  try {
+    const saved = window.localStorage.getItem(PROGRAM_START_KEY)
+    if (saved) return saved
+  } catch {
+    // localStorage 不可用时退回本次会话起点，不影响展示。
+  }
+  const now = new Date().toISOString()
+  try {
+    window.localStorage.setItem(PROGRAM_START_KEY, now)
+  } catch {
+    // 同上。
+  }
+  return now
+}
 
 function doseLabel(exercise: Exercise) {
   const unit = exercise.unit === 'seconds' ? '秒' : '次'
@@ -10,11 +33,16 @@ function doseLabel(exercise: Exercise) {
 }
 
 /**
- * 训练计划页：把一次动作诊断转成一节 30–60 分钟的训练课。
+ * 训练计划页：把一次动作诊断转成「8 周周期化计划中的本周课表」。
  * 尚未做过诊断时显示引导空态。
  */
 export function TrainingView({ analysis }: { analysis?: JumpAnalysis }) {
-  const plan = useMemo(() => generateTrainingPlan(analysis), [analysis])
+  const program: TrainingProgram = useMemo(() => generateProgram(analysis, readProgramStart()), [analysis])
+  const phase = useMemo(() => phaseOf(program), [program])
+  const plan = useMemo(
+    () => generateTrainingPlan(analysis, { loadStep: phase.loadStep }),
+    [analysis, phase.loadStep],
+  )
 
   if (!analysis) {
     return (
@@ -22,7 +50,7 @@ export function TrainingView({ analysis }: { analysis?: JumpAnalysis }) {
         <div className="subpage-heading">
           <span className="dashboard-kicker">03 / TRAINING</span>
           <h1 id="training-title">训练计划</h1>
-          <p>这里会把你的动作诊断转成一节可以直接照着练的训练课。</p>
+          <p>这里会把你的动作诊断转成一段 8 周的训练计划。</p>
         </div>
         <div className="empty-subpage">
           <Dumbbell aria-hidden="true" size={30} />
@@ -37,12 +65,21 @@ export function TrainingView({ analysis }: { analysis?: JumpAnalysis }) {
     <section className="subpage" aria-labelledby="training-title">
       <div className="subpage-heading">
         <span className="dashboard-kicker">03 / TRAINING</span>
-        <h1 id="training-title">本次训练方案</h1>
-        <p>根据最近一次动作诊断生成，可支撑一次完整的训练课。</p>
+        <h1 id="training-title">本周训练方案</h1>
+        <p>
+          今天是计划的第 {program.currentWeek} 周（共 {program.totalWeeks} 周），
+          当前处于{phase.phaseLabel}。方案按最近一次诊断生成。
+        </p>
       </div>
 
       <div className="training-plan">
         <div className="plan-meta">
+          <div className="plan-meta__item">
+            <span>训练周期</span>
+            <strong>
+              第 {program.currentWeek} / {program.totalWeeks} 周 · {phase.phaseLabel}
+            </strong>
+          </div>
           <div className="plan-meta__item">
             <span>预计时长</span>
             <strong>{plan.totalMinutes}</strong>
@@ -67,6 +104,8 @@ export function TrainingView({ analysis }: { analysis?: JumpAnalysis }) {
           </div>
         </div>
 
+        <p className="plan-phase-note">{phase.note}</p>
+
         {plan.sections.map((section) => (
           <section className={`plan-section plan-section--${section.kind}`} key={section.kind}>
             <div className="plan-section__heading">
@@ -84,6 +123,11 @@ export function TrainingView({ analysis }: { analysis?: JumpAnalysis }) {
                   <div className="plan-item__foot">
                     {item.metricLabel ? (
                       <span className="plan-item__target">针对 · {item.metricLabel}</span>
+                    ) : null}
+                    {item.severityBoost ? (
+                      <span className="plan-item__severity">
+                        偏离明显 · 已加 {item.severityBoost} 组
+                      </span>
                     ) : null}
                     <span>组间休息 {item.exercise.restSeconds} 秒</span>
                   </div>

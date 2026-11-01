@@ -32,6 +32,7 @@ import {
   type CoachReport,
   type ComparisonReport,
 } from './reports/diagnosis'
+import { buildAssessment } from './reports/assessment'
 import { listLocalReports, saveLocalReport, type LocalReport } from './reports/localReports'
 import { getAnonymousAthleteId } from './training/anonymousId'
 import { TrainingView } from './training/TrainingView'
@@ -177,6 +178,36 @@ function AnalysisReport({
       </div>
       {degraded?.length ? (
         <p className="analysis-degraded-note">本次结果受限：{degraded.join('；')}</p>
+      ) : null}
+      {report.assessment ? (
+        <div className="assessment-card" aria-label="动作评价">
+          <div className="assessment-card__head">
+            <div className="assessment-card__score">
+              <strong>{report.assessment.totalScore ?? '—'}</strong>
+              <span>分</span>
+            </div>
+            <div className="assessment-card__summary">
+              <span className="assessment-card__level">{report.assessment.levelLabel}</span>
+              <p>{report.assessment.headline}</p>
+            </div>
+          </div>
+          <div className="assessment-phases">
+            {report.assessment.phases.map((phase) => (
+              <div className="assessment-phase" key={phase.phase}>
+                <span>{phase.label}</span>
+                <strong>{phase.score !== undefined ? phase.score : '—'}</strong>
+                {phase.weakCount ? <small>{phase.weakCount} 项待改进</small> : null}
+              </div>
+            ))}
+          </div>
+          {report.assessment.causality.length ? (
+            <ul className="assessment-causality">
+              {report.assessment.causality.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
       ) : null}
 
       {report.hasPriority ? (
@@ -547,6 +578,7 @@ function App() {
       active = false
     }
   }, [analysisQuality, jumpAnalysis])
+  const assessment = useMemo(() => (jumpAnalysis ? buildAssessment(jumpAnalysis) : undefined), [jumpAnalysis])
   const championComparison = backendChampionComparison ?? localChampionComparison
   const coachReport = useMemo(
     () =>
@@ -558,10 +590,11 @@ function App() {
             {
               championComparison,
               previousAnalysis: previousAnalysisForReport,
+              assessment,
             },
           )
         : undefined,
-    [analysisQuality, championComparison, jumpAnalysis, previousAnalysisForReport],
+    [analysisQuality, assessment, championComparison, jumpAnalysis, previousAnalysisForReport],
   )
   const previousReport = comparisonBaseRef.current ?? localReports[0]?.coachReport
   const comparison = useMemo(
