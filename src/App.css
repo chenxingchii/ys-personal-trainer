@@ -1335,6 +1335,76 @@ h1 {
   }
 }
 
+.score-entry {
+  margin-top: 16px;
+  padding: 14px 18px;
+  border: 1px solid #c7ddd5;
+  border-radius: 6px;
+  background: #f4faf7;
+  display: grid;
+  gap: 10px;
+}
+
+.score-entry__head {
+  display: grid;
+  gap: 2px;
+}
+
+.score-entry__head span {
+  font-family: var(--font-utility);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--track-dark);
+}
+
+.score-entry__head small {
+  font-size: 11px;
+  color: #6b7b76;
+}
+
+.score-entry__fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 14px;
+}
+
+.score-entry__fields label {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: #6b7b76;
+}
+
+.score-entry__fields input,
+.score-entry__fields select {
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.score-entry__fields input {
+  width: 100px;
+}
+
+.score-entry__fields button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background: var(--field);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.score-entry__hint {
+  margin: 0;
+  font-size: 12px;
+  color: #2f5c4e;
+}
+
 .plan-phase-note {
   margin: 0 0 12px;
   padding: 10px 14px;

@@ -37,7 +37,7 @@ import {
 import { buildAssessment } from './reports/assessment'
 import type { LocalReport } from './reports/localReports'
 import { getActiveSubject, listSubjects, createSubject, setActiveSubjectId, type Subject } from './storage/subjects'
-import { listReportsBySubject, saveReport } from './storage/reports'
+import { listReportsBySubject, saveReport, updateReport } from './storage/reports'
 import { buildExportPayload, downloadExport } from './storage/exportData'
 import { getAnonymousAthleteId } from './training/anonymousId'
 import { TrainingView } from './training/TrainingView'
@@ -322,7 +322,12 @@ function SubjectBar({
   activeSubject: Subject | null
   subjects: Subject[]
   onSwitch: (subject: Subject) => void
-  onCreate: (input: { id: string; name?: string; group: string }) => void
+  onCreate: (input: {
+    id: string
+    name?: string
+    group: string
+    experimentGroup?: 'G1' | 'G2' | 'G3'
+  }) => void
   onExport: () => void
   exportHint: string | null
 }) {
@@ -331,6 +336,7 @@ function SubjectBar({
   const [newId, setNewId] = useState('')
   const [newName, setNewName] = useState('')
   const [newGroup, setNewGroup] = useState('')
+  const [newExpGroup, setNewExpGroup] = useState<'' | 'G1' | 'G2' | 'G3'>('')
 
   const keyword = query.trim().toLowerCase()
   const filtered = keyword
@@ -350,10 +356,11 @@ function SubjectBar({
   const submit = () => {
     const id = newId.trim()
     if (!id) return
-    onCreate({ id, name: newName.trim() || undefined, group: newGroup.trim() || '未分组' })
+    onCreate({ id, name: newName.trim() || undefined, group: newGroup.trim() || '未分组', experimentGroup: newExpGroup || undefined })
     setNewId('')
     setNewName('')
     setNewGroup('')
+    setNewExpGroup('')
     setOpen(false)
   }
 
@@ -409,6 +416,15 @@ function SubjectBar({
             <input placeholder="编号（必填，如 S01）" value={newId} onChange={(e) => setNewId(e.target.value)} />
             <input placeholder="姓名（可选）" value={newName} onChange={(e) => setNewName(e.target.value)} />
             <input placeholder="班级/组别（如 1班）" value={newGroup} onChange={(e) => setNewGroup(e.target.value)} />
+            <select
+              value={newExpGroup}
+              onChange={(e) => setNewExpGroup(e.target.value as '' | 'G1' | 'G2' | 'G3')}
+            >
+              <option value="">实验分组（可选）</option>
+              <option value="G1">G1 软件组</option>
+              <option value="G2">G2 教师组</option>
+              <option value="G3">G3 参照组</option>
+            </select>
             <button type="button" onClick={submit} disabled={!newId.trim()}>
               新建并切换
             </button>
@@ -862,6 +878,9 @@ function App() {
   }, [])
 
   const [exportHint, setExportHint] = useState<string | null>(null)
+  const [scoreInput, setScoreInput] = useState('')
+  const [timepointInput, setTimepointInput] = useState<'' | 'T0' | 'T1' | 'T2'>('')
+  const [scoreHint, setScoreHint] = useState<string | null>(null)
 
   const handleExport = useCallback(() => {
     void (async () => {
@@ -870,6 +889,29 @@ function App() {
       setExportHint(`已导出 ${payload.subjects.length} 名受试者 · ${payload.reports.length} 条记录`)
     })()
   }, [])
+
+  useEffect(() => {
+    setScoreInput(latestReport?.longJumpCm !== undefined ? String(latestReport.longJumpCm) : '')
+    setTimepointInput(latestReport?.timepoint ?? '')
+    setScoreHint(null)
+  }, [latestReport?.id, latestReport?.longJumpCm, latestReport?.timepoint])
+
+  const handleSaveScore = useCallback(() => {
+    const target = latestReport
+    if (!target) return
+    const parsed = scoreInput.trim() === '' ? undefined : Number(scoreInput)
+    if (parsed !== undefined && !Number.isFinite(parsed)) {
+      setScoreHint('成绩需要填数字，单位为厘米。')
+      return
+    }
+    void updateReport(target.id, {
+      longJumpCm: parsed,
+      timepoint: timepointInput || undefined,
+    }).then(async () => {
+      setSubjectReports(await listReportsBySubject(target.subjectId))
+      setScoreHint('已保存')
+    })
+  }, [latestReport, scoreInput, timepointInput])
 
   const handleSwitchSubject = useCallback((subject: Subject) => {
     setActiveSubject(subject)
@@ -1116,6 +1158,47 @@ function App() {
                       />
                     ) : null}
                     {reportSnapshot && showReport ? <LocalHistory reports={subjectReports} /> : null}
+                    {reportSnapshot && showReport && latestReport ? (
+                      <div className="score-entry" aria-label="补录本次测试成绩">
+                        <div className="score-entry__head">
+                          <span>补录本次测试</span>
+                          <small>成绩与时点会随报告一起导出，供统计分析使用</small>
+                        </div>
+                        <div className="score-entry__fields">
+                          <label>
+                            立定跳远
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              step="0.1"
+                              min="0"
+                              placeholder="cm"
+                              value={scoreInput}
+                              onChange={(event) => setScoreInput(event.target.value)}
+                            />
+                            cm
+                          </label>
+                          <label>
+                            测试时点
+                            <select
+                              value={timepointInput}
+                              onChange={(event) =>
+                                setTimepointInput(event.target.value as '' | 'T0' | 'T1' | 'T2')
+                              }
+                            >
+                              <option value="">未标注</option>
+                              <option value="T0">T0 前测</option>
+                              <option value="T1">T1 中测</option>
+                              <option value="T2">T2 后测</option>
+                            </select>
+                          </label>
+                          <button type="button" onClick={handleSaveScore}>
+                            保存成绩
+                          </button>
+                        </div>
+                        {scoreHint ? <p className="score-entry__hint">{scoreHint}</p> : null}
+                      </div>
+                    ) : null}
                     {reportSnapshot ? (
                       <div className="retest-prompt">
                         <div>

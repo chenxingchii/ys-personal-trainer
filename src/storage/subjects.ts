@@ -13,6 +13,8 @@ export type Subject = {
   name?: string
   /** 班级或组别，用于切换面板分组，如「1班」「G1」。 */
   group: string
+  /** 实验分组（G1 软件组 / G2 教师组 / G3 参照组）；与班级分开，供统计分析使用。 */
+  experimentGroup?: 'G1' | 'G2' | 'G3'
   /** 该受试者 8 周训练周期的起点（ISO）。首次进入训练页时写入。 */
   programStart?: string
   createdAt: string
@@ -37,12 +39,14 @@ export async function createSubject(input: {
   id: string
   name?: string
   group: string
+  experimentGroup?: Subject['experimentGroup']
 }): Promise<Subject> {
   const db = await getDB()
   const subject: Subject = {
     id: input.id.trim(),
     name: input.name?.trim() || undefined,
     group: input.group.trim() || '未分组',
+    experimentGroup: input.experimentGroup,
     createdAt: new Date().toISOString(),
   }
   await db.put('subjects', subject)

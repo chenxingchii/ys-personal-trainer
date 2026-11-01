@@ -25,4 +25,8 @@ export type LocalReport = {
   qualityTier?: 'verified' | 'degraded'
   /** 完整动作评价；早期报告没有这个字段。 */
   assessment?: Assessment
+  /** 立定跳远成绩（cm）——实验主结局。系统测不出来，由教师在诊断后录入。 */
+  longJumpCm?: number
+  /** 测试时点：T0 前测 / T1 中测 / T2 后测。与成绩同期录入，避免事后按时间猜测。 */
+  timepoint?: 'T0' | 'T1' | 'T2'
 }

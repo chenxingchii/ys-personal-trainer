@@ -78,7 +78,8 @@ def write_subjects(subjects: list, reports: list, out_dir: Path) -> None:
     print(f"subjects.csv       {len(subjects)} 行")
 
 
-def write_wide(reports: list, scores: dict, out_dir: Path) -> None:
+def write_wide(reports: list, subjects: list, scores: dict, out_dir: Path) -> None:
+    experiment_groups = {subject.get("id", ""): subject.get("experimentGroup", "") for subject in subjects}
     header = [
         "report_id",
         "subject_id",
@@ -114,7 +115,12 @@ def write_wide(reports: list, scores: dict, out_dir: Path) -> None:
                 (report.get("assessment") or {}).get("level", ""),
                 coach.get("priority", ""),
             ]
-            row.extend(manual.get(column, "") for column in MANUAL_COLUMNS)
+            # 优先用 --scores 补填值，否则用 App 内录入的成绩、时点与受试者实验分组。
+            row.append(manual.get("long_jump_cm") or report.get("longJumpCm", ""))
+            row.append(manual.get("timepoint") or report.get("timepoint", ""))
+            row.append(
+                manual.get("experiment_group") or experiment_groups.get(report.get("subjectId", ""), "")
+            )
             for metric_id in METRIC_IDS:
                 metric = metrics.get(metric_id)
                 row.append("" if metric is None else metric.get("value", ""))
@@ -186,17 +192,19 @@ def main() -> int:
     scores = load_scores(args.scores)
 
     write_subjects(subjects, reports, args.out)
-    write_wide(reports, scores, args.out)
+    write_wide(reports, subjects, scores, args.out)
     write_long(reports, args.out)
 
-    missing = [column for column in MANUAL_COLUMNS if column != "long_jump_cm"]
+    filled = sum(1 for report in reports if report.get("longJumpCm") is not None)
     print()
     print(f"输出目录：{args.out.resolve()}")
-    if not args.scores:
-        print("提示：long_jump_cm / timepoint / experiment_group 三列为空，")
-        print("      它们是主结局与设计变量，需用 --scores 传入或在 Excel 里补填。")
-    else:
-        print(f"已合并补填成绩：{len(scores)} 条")
+    if filled:
+        print(f"已带出 App 内录入的成绩：{filled} 条")
+    if args.scores:
+        print(f"已合并 --scores 补填表：{len(scores)} 条")
+    if not filled and not args.scores:
+        print("提示：long_jump_cm / timepoint / experiment_group 三列为空。")
+        print("      可在 App 里『补录本次测试』，或用 --scores 传入补填表。")
     return 0
 
 

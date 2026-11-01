@@ -48,3 +48,20 @@ export async function removeReport(id: string): Promise<void> {
   const db = await getDB()
   await db.delete('reports', id)
 }
+
+/**
+ * 补录主结局与测试时点。
+ *
+ * 立定跳远成绩系统测不出来，但它是干预实验的主结局；
+ * 测试时点（T0/T1/T2）也只有在补录时才能可靠绑定，
+ * 事后再按 createdAt 推断前测/后测极易错配。
+ */
+export async function updateReport(
+  id: string,
+  patch: Partial<Pick<LocalReport, 'longJumpCm' | 'timepoint'>>,
+): Promise<void> {
+  const db = await getDB()
+  const existing = await db.get('reports', id)
+  if (!existing) return
+  await db.put('reports', slim({ ...existing, ...patch }))
+}
