@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'ys-trainer-shell-v1'
+const CACHE_VERSION = 'ys-trainer-shell-v2'
 // 部署基准路径：Vercel 根路径部署时为 `/`；GitHub Pages 子路径部署时为 `/ys-personal-trainer/`。
 // 从 SW 作用域推导，保证缓存键与页面真实请求路径一致。
 const basePath = new URL(self.registration.scope).pathname
@@ -30,6 +30,12 @@ self.addEventListener('activate', (event) => {
   self.clients.claim()
 })
 
+function putInCache(request, response) {
+  if (!response || response.status !== 200 || response.type !== 'basic') return
+  const copy = response.clone()
+  caches.open(CACHE_VERSION).then((cache) => cache.put(request, copy))
+}
+
 self.addEventListener('fetch', (event) => {
   const request = event.request
   if (request.method !== 'GET') return
@@ -37,14 +43,32 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url)
   if (url.origin !== self.location.origin) return
 
+  // 页面导航走「网络优先」：否则旧的 index.html 会一直命中缓存，
+  // 它引用的旧 bundle 让用户永远看不到新版本（缓存版本号曾长期停在 v1）。
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          putInCache(request, response)
+          return response
+        })
+        .catch(() =>
+          caches
+            .match(request)
+            .then((cached) => cached || caches.match(basePath))
+            .then((cached) => cached || Response.error()),
+        ),
+    )
+    return
+  }
+
+  // 其余静态资源仍缓存优先：构建产物文件名带内容 hash，内容不会变。
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached
 
       return fetch(request).then((response) => {
-        if (!response || response.status !== 200 || response.type !== 'basic') return response
-        const copy = response.clone()
-        caches.open(CACHE_VERSION).then((cache) => cache.put(request, copy))
+        putInCache(request, response)
         return response
       })
     }),
