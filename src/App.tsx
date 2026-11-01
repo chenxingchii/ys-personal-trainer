@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Square,
   Trash2,
+  UserRound,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
@@ -33,7 +34,9 @@ import {
   type ComparisonReport,
 } from './reports/diagnosis'
 import { buildAssessment } from './reports/assessment'
-import { listLocalReports, saveLocalReport, type LocalReport } from './reports/localReports'
+import type { LocalReport } from './reports/localReports'
+import { getActiveSubject, listSubjects, createSubject, setActiveSubjectId, type Subject } from './storage/subjects'
+import { listReportsBySubject, saveReport } from './storage/reports'
 import { getAnonymousAthleteId } from './training/anonymousId'
 import { TrainingView } from './training/TrainingView'
 import championModelData from './reports/champion-v1.json'
@@ -306,6 +309,110 @@ function LocalHistory({ reports }: { reports: LocalReport[] }) {
   )
 }
 
+function SubjectBar({
+  activeSubject,
+  subjects,
+  onSwitch,
+  onCreate,
+}: {
+  activeSubject: Subject | null
+  subjects: Subject[]
+  onSwitch: (subject: Subject) => void
+  onCreate: (input: { id: string; name?: string; group: string }) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const [newId, setNewId] = useState('')
+  const [newName, setNewName] = useState('')
+  const [newGroup, setNewGroup] = useState('')
+
+  const keyword = query.trim().toLowerCase()
+  const filtered = keyword
+    ? subjects.filter(
+        (subject) =>
+          subject.id.toLowerCase().includes(keyword) || (subject.name ?? '').toLowerCase().includes(keyword),
+      )
+    : subjects
+
+  const grouped = new Map<string, Subject[]>()
+  for (const subject of filtered) {
+    const list = grouped.get(subject.group) ?? []
+    list.push(subject)
+    grouped.set(subject.group, list)
+  }
+
+  const submit = () => {
+    const id = newId.trim()
+    if (!id) return
+    onCreate({ id, name: newName.trim() || undefined, group: newGroup.trim() || '未分组' })
+    setNewId('')
+    setNewName('')
+    setNewGroup('')
+    setOpen(false)
+  }
+
+  return (
+    <div className="subject-bar">
+      <button className="subject-bar__current" type="button" onClick={() => setOpen((value) => !value)}>
+        <UserRound aria-hidden="true" size={16} />
+        {activeSubject ? (
+          <span>
+            当前受试者 · <strong>{activeSubject.id}</strong>
+            {activeSubject.name ? ` ${activeSubject.name}` : ''} · {activeSubject.group}
+          </span>
+        ) : (
+          <span className="subject-bar__empty">未选择受试者 —— 点此新建或选择</span>
+        )}
+      </button>
+
+      {open ? (
+        <div className="subject-panel">
+          <input
+            className="subject-panel__search"
+            placeholder="搜索编号或姓名"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+          <div className="subject-panel__list">
+            {[...grouped.entries()].map(([group, list]) => (
+              <div className="subject-group" key={group}>
+                <span>{group}</span>
+                <div>
+                  {list.map((subject) => (
+                    <button
+                      className={`subject-chip ${activeSubject?.id === subject.id ? 'subject-chip--active' : ''}`}
+                      key={subject.id}
+                      type="button"
+                      onClick={() => {
+                        onSwitch(subject)
+                        setOpen(false)
+                      }}
+                    >
+                      {subject.id}
+                      {subject.name ? ` ${subject.name}` : ''}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+            {subjects.length === 0 ? (
+              <p className="subject-panel__hint">还没有受试者，先在下面新建一个。</p>
+            ) : null}
+          </div>
+          <div className="subject-panel__create">
+            <input placeholder="编号（必填，如 S01）" value={newId} onChange={(e) => setNewId(e.target.value)} />
+            <input placeholder="姓名（可选）" value={newName} onChange={(e) => setNewName(e.target.value)} />
+            <input placeholder="班级/组别（如 1班）" value={newGroup} onChange={(e) => setNewGroup(e.target.value)} />
+            <button type="button" onClick={submit} disabled={!newId.trim()}>
+              新建并切换
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 function MainNavigation({
   activeView,
   onNavigate,
@@ -470,7 +577,9 @@ function App() {
   const { clearVideo, error, metadata, selectVideo, selectedVideo } = useVideoSelection()
   const { analyzeFrame, analyzeVideo, clearResult, reset: resetPose, state: poseState } = usePoseLandmarker()
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [localReports, setLocalReports] = useState<LocalReport[]>(() => listLocalReports())
+  const [subjects, setSubjects] = useState<Subject[]>([])
+  const [activeSubject, setActiveSubject] = useState<Subject | null>(null)
+  const [subjectReports, setSubjectReports] = useState<LocalReport[]>([])
   const savedReportVideoRef = useRef<string | null>(null)
   const [qualityCheck, setQualityCheck] = useState<VideoQualityResult | null>(null)
   const [isRetest, setIsRetest] = useState(false)
@@ -492,6 +601,28 @@ function App() {
   const [showReport, setShowReport] = useState(false)
   const [activeView, setActiveView] = useState<AppView>('home')
   const [selectedHistoryReport, setSelectedHistoryReport] = useState<LocalReport | null>(null)
+
+  useEffect(() => {
+    void (async () => {
+      setSubjects(await listSubjects())
+      setActiveSubject(await getActiveSubject())
+    })()
+  }, [])
+
+  useEffect(() => {
+    const subjectId = activeSubject?.id
+    if (!subjectId) {
+      setSubjectReports([])
+      return
+    }
+    let alive = true
+    void listReportsBySubject(subjectId).then((reports) => {
+      if (alive) setSubjectReports(reports)
+    })
+    return () => {
+      alive = false
+    }
+  }, [activeSubject?.id])
 
   useEffect(() => resetPose(), [selectedVideo?.url, resetPose])
   useEffect(() => {
@@ -596,7 +727,8 @@ function App() {
         : undefined,
     [analysisQuality, assessment, championComparison, jumpAnalysis, previousAnalysisForReport],
   )
-  const previousReport = comparisonBaseRef.current ?? localReports[0]?.coachReport
+  const latestReport = subjectReports[0]
+  const previousReport = comparisonBaseRef.current ?? latestReport?.coachReport
   const comparison = useMemo(
     () =>
       isRetest && previousReport && coachReport
@@ -606,21 +738,26 @@ function App() {
   )
 
   useEffect(() => {
-    if (!selectedVideo || !coachReport || !jumpAnalysis || savedReportVideoRef.current === selectedVideo.url)
+    if (
+      !selectedVideo ||
+      !coachReport ||
+      !jumpAnalysis ||
+      !activeSubject ||
+      savedReportVideoRef.current === selectedVideo.url
+    )
       return
-    const saved = saveLocalReport({
+    const subjectId = activeSubject.id
+    savedReportVideoRef.current = selectedVideo.url
+    void saveReport({
+      subjectId,
       videoName: selectedVideo.file.name,
       videoSize: selectedVideo.file.size,
       analysis: jumpAnalysis,
       coachReport,
       championComparison,
       qualityTier: analysisQuality?.passed ? 'verified' : 'degraded',
-    })
-    if (saved) {
-      savedReportVideoRef.current = selectedVideo.url
-      setLocalReports(listLocalReports())
-    }
-  }, [championComparison, coachReport, jumpAnalysis, selectedVideo])
+    }).then(() => listReportsBySubject(subjectId).then(setSubjectReports))
+  }, [activeSubject, analysisQuality, championComparison, coachReport, jumpAnalysis, selectedVideo])
 
   useEffect(() => {
     if (!coachReport) return
@@ -689,27 +826,50 @@ function App() {
 
   const handleRetestSelect = useCallback(
     (file: File | null) => {
-      comparisonBaseRef.current = coachReport ?? localReports[0]?.coachReport ?? null
-      setPreviousAnalysisForReport(jumpAnalysis ?? localReports[0]?.analysis)
+      comparisonBaseRef.current = coachReport ?? latestReport?.coachReport ?? null
+      setPreviousAnalysisForReport(jumpAnalysis ?? latestReport?.analysis)
       setIsRetest(true)
       setShowReport(false)
       selectVideo(file)
     },
-    [coachReport, jumpAnalysis, localReports, selectVideo],
+    [coachReport, jumpAnalysis, latestReport, selectVideo],
   )
 
   const handleReplaceVideo = useCallback(
     (file: File | null) => {
-      setPreviousAnalysisForReport(localReports[0]?.analysis)
+      setPreviousAnalysisForReport(latestReport?.analysis)
       setShowReport(false)
       selectVideo(file)
     },
-    [localReports, selectVideo],
+    [latestReport, selectVideo],
   )
 
   const handleOpenHistoryReport = useCallback((report: LocalReport) => {
     setSelectedHistoryReport(report)
   }, [])
+
+  const handleSwitchSubject = useCallback((subject: Subject) => {
+    setActiveSubject(subject)
+    setActiveSubjectId(subject.id)
+    // 切换受试者时必须清掉所有与"上一个人"绑定的瞬态，否则复测基线与详情页会串人。
+    setSelectedHistoryReport(null)
+    setReportSnapshot(null)
+    setShowReport(false)
+    setPreviousAnalysisForReport(undefined)
+    comparisonBaseRef.current = null
+    savedReportVideoRef.current = null
+  }, [])
+
+  const handleCreateSubject = useCallback(
+    (input: { id: string; name?: string; group: string }) => {
+      void (async () => {
+        const subject = await createSubject(input)
+        setSubjects(await listSubjects())
+        handleSwitchSubject(subject)
+      })()
+    },
+    [handleSwitchSubject],
+  )
 
   return (
     <div className="app-shell">
@@ -729,22 +889,29 @@ function App() {
         </div>
       </header>
 
+      <SubjectBar
+        activeSubject={activeSubject}
+        subjects={subjects}
+        onSwitch={handleSwitchSubject}
+        onCreate={handleCreateSubject}
+      />
+
       <div className="navigation-wrap">
         <MainNavigation activeView={activeView} onNavigate={setActiveView} />
       </div>
 
       <main>
-        {activeView === 'home' ? <Dashboard reports={localReports} onNavigate={setActiveView} /> : null}
+        {activeView === 'home' ? <Dashboard reports={subjectReports} onNavigate={setActiveView} /> : null}
         {activeView === 'history' ? (
           <HistoryView
-            reports={localReports}
+            reports={subjectReports}
             selectedReport={selectedHistoryReport}
             onOpenReport={handleOpenHistoryReport}
             onCloseReport={() => setSelectedHistoryReport(null)}
           />
         ) : null}
         {activeView === 'training' ? (
-          <TrainingView analysis={jumpAnalysis ?? localReports[0]?.analysis} />
+          <TrainingView analysis={jumpAnalysis ?? latestReport?.analysis} subject={activeSubject} />
         ) : null}
         {activeView === 'movement' ? <MovementPlaceholder /> : null}
         {activeView === 'diagnosis' ? (
@@ -923,7 +1090,7 @@ function App() {
                         degraded={analysisQuality?.degraded}
                       />
                     ) : null}
-                    {reportSnapshot && showReport ? <LocalHistory reports={localReports} /> : null}
+                    {reportSnapshot && showReport ? <LocalHistory reports={subjectReports} /> : null}
                     {reportSnapshot ? (
                       <div className="retest-prompt">
                         <div>

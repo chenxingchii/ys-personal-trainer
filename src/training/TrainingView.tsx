@@ -1,31 +1,10 @@
 import { Dumbbell } from 'lucide-react'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { JumpAnalysis } from '../biomechanics/types'
 import { FREQUENCY_NOTE, generateTrainingPlan } from './planGenerator'
 import { generateProgram, phaseOf, type TrainingProgram } from './programGenerator'
+import { ensureProgramStart, type Subject } from '../storage/subjects'
 import type { Exercise } from './exerciseLibrary'
-
-const PROGRAM_START_KEY = 'ys-personal-trainer.program.start'
-
-/**
- * 训练周期的起点。首次进入训练页时写入本机，之后一直沿用，
- * 这样即使用户不复测，第 5 周的训练量也会不同于第 1 周（见 programGenerator.ts）。
- */
-function readProgramStart(): string {
-  try {
-    const saved = window.localStorage.getItem(PROGRAM_START_KEY)
-    if (saved) return saved
-  } catch {
-    // localStorage 不可用时退回本次会话起点，不影响展示。
-  }
-  const now = new Date().toISOString()
-  try {
-    window.localStorage.setItem(PROGRAM_START_KEY, now)
-  } catch {
-    // 同上。
-  }
-  return now
-}
 
 function doseLabel(exercise: Exercise) {
   const unit = exercise.unit === 'seconds' ? '秒' : '次'
@@ -33,11 +12,42 @@ function doseLabel(exercise: Exercise) {
 }
 
 /**
- * 训练计划页：把一次动作诊断转成「8 周周期化计划中的本周课表」。
- * 尚未做过诊断时显示引导空态。
+ * 训练计划页：把一次动作诊断转成「该受试者 8 周周期化计划中的本周课表」。
+ *
+ * 周期起点挂在受试者档案上（Subject.programStart），不再用全局 localStorage key——
+ * 否则教师一台手机管一个班时，所有人会共用第一个人的 8 周进度。
  */
-export function TrainingView({ analysis }: { analysis?: JumpAnalysis }) {
-  const program: TrainingProgram = useMemo(() => generateProgram(analysis, readProgramStart()), [analysis])
+export function TrainingView({
+  analysis,
+  subject,
+}: {
+  analysis?: JumpAnalysis
+  subject?: Subject | null
+}) {
+  const [programStart, setProgramStart] = useState<string | null>(subject?.programStart ?? null)
+
+  useEffect(() => {
+    if (!subject) {
+      setProgramStart(null)
+      return
+    }
+    if (subject.programStart) {
+      setProgramStart(subject.programStart)
+      return
+    }
+    let alive = true
+    void ensureProgramStart(subject.id).then((start) => {
+      if (alive) setProgramStart(start)
+    })
+    return () => {
+      alive = false
+    }
+  }, [subject?.id, subject?.programStart])
+
+  const program: TrainingProgram = useMemo(
+    () => generateProgram(analysis, programStart ?? new Date().toISOString()),
+    [analysis, programStart],
+  )
   const phase = useMemo(() => phaseOf(program), [program])
   const plan = useMemo(
     () => generateTrainingPlan(analysis, { loadStep: phase.loadStep }),
@@ -50,12 +60,14 @@ export function TrainingView({ analysis }: { analysis?: JumpAnalysis }) {
         <div className="subpage-heading">
           <span className="dashboard-kicker">03 / TRAINING</span>
           <h1 id="training-title">训练计划</h1>
-          <p>这里会把你的动作诊断转成一段 8 周的训练计划。</p>
+          <p>这里会把动作诊断转成一段 8 周的训练计划。</p>
         </div>
         <div className="empty-subpage">
           <Dumbbell aria-hidden="true" size={30} />
           <strong>还没有可用的诊断结果</strong>
-          <span>先完成一次动作诊断，系统会据此生成针对性的训练方案。</span>
+          <span>
+            {subject ? '先为当前受试者完成一次动作诊断。' : '先在顶部选择受试者，再完成一次动作诊断。'}
+          </span>
         </div>
       </section>
     )
@@ -68,7 +80,7 @@ export function TrainingView({ analysis }: { analysis?: JumpAnalysis }) {
         <h1 id="training-title">本周训练方案</h1>
         <p>
           今天是计划的第 {program.currentWeek} 周（共 {program.totalWeeks} 周），
-          当前处于{phase.phaseLabel}。方案按最近一次诊断生成。
+          当前处于{phase.phaseLabel}。方案按{subject ? `受试者 ${subject.id} ` : ''}最近一次诊断生成。
         </p>
       </div>
 
